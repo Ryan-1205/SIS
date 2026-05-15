@@ -1,0 +1,302 @@
+:root {
+    --tosca-tua: #1d5c56;
+    --tosca-muda: #c4e2e0;
+    --safe-zone: 80%;
+}
+
+body {
+    font-family: 'Poppins', sans-serif;
+    background-color: #ffffff;
+    margin: 0;
+    padding: 0;
+}
+
+.safe-container {
+    max-width: var(--safe-zone);
+    margin: 0px auto;
+    width: 100%;
+}
+
+.navbar-sis {
+    background-color: var(--tosca-tua);
+    padding: 15px 0;
+}
+
+.brand-sub {
+    font-weight: 300; 
+    font-size: 16px; 
+    margin-left: 10px;
+}
+
+.search-section {
+    padding: 30px 0;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.search-title {
+    color: var(--tosca-tua);
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.search-bar {
+    flex-grow: 1;
+    position: relative;
+}
+
+.search-bar input {
+    width: 100%;
+    border-radius: 50px;
+    border: 2px solid var(--tosca-tua);
+    padding: 12px 25px;
+    outline: none;
+}
+
+.search-icon {
+    position: absolute; 
+    right: 20px; 
+    top: 12px; 
+    color: var(--tosca-tua);
+}
+
+.action-icons {
+    display: flex;
+    gap: 25px;
+    color: var(--tosca-tua);
+    font-weight: 600;
+}
+
+.action-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.action-item:hover {
+    opacity: 0.7;
+}
+
+.category-wrapper {
+    background-color: var(--tosca-muda);
+    border-radius: 40px;
+    padding: 60px 40px;
+    text-align: center;
+    margin-top: 20px;
+}
+
+.category-title {
+    color: var(--tosca-tua);
+    font-weight: 800;
+    font-size: 38px;
+    margin-bottom: 50px;
+    letter-spacing: 1px;
+}
+
+.card-category {
+    background-color: var(--tosca-tua);
+    border-radius: 25px;
+    padding: 20px;
+    transition: all 0.3s ease;
+    text-decoration: none;
+    display: block;
+    height: 100%;
+}
+
+.card-category:hover {
+    transform: translateY(-12px);
+    box-shadow: 0 15px 30px rgba(29, 92, 86, 0.3);
+}
+
+.white-box {
+    background-color: white;
+    border-radius: 20px;
+    aspect-ratio: 1 / 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 25px;
+}
+
+.white-box img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+}
+
+.category-name {
+    color: white;
+    margin-top: 20px;
+    font-size: 16px;
+    line-height: 1.2;
+}
+
+.category-name strong {
+    display: block;
+    font-size: 20px;
+    margin-top: 5px;
+}
+
+.nav-link-custom {
+    color: white !important;
+    font-weight: 600;
+    margin-left: 25px;
+    text-decoration: none;
+}
+
+
+
+
+
+/* Styling Tambahan untuk Tombol Back */
+.back-btn {
+    text-decoration: none;
+    transition: transform 0.2s;
+    display: flex;
+    align-items: center;
+}
+
+.back-btn:hover {
+    transform: scale(1.1);
+}
+
+/* Custom Grid untuk 5 Kolom Sesuai Gambar */
+@media (min-width: 992px) {
+    .col-md-2-4 {
+        flex: 0 0 auto;
+        width: 20%; /* 100% / 5 = 20% */
+    }
+}
+
+/* Card Styling agar lebih mirip gambar */
+.item-card {
+    background-color: #d8ecea; /* Warna background card sedikit lebih soft */
+    border-radius: 15px;
+    padding: 12px;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.item-img-box {
+    background-color: var(--tosca-tua);
+    border-radius: 10px;
+    aspect-ratio: 1 / 1; /* Kotak sempurna */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 12px;
+}
+
+.item-name {
+    color: var(--tosca-tua);
+    font-weight: 700;
+    font-size: 1rem;
+    margin-bottom: 2px;
+}
+
+.item-desc {
+    color: #666;
+    font-size: 0.75rem;
+    margin-bottom: 15px;
+}
+
+.btn-pinjam {
+    background-color: var(--tosca-tua);
+    color: white;
+    text-align: center;
+    text-decoration: none;
+    font-weight: 700;
+    padding: 8px;
+    border-radius: 8px;
+    width: 100%;
+    display: block;
+    font-size: 0.9rem;
+}
+
+.btn-pinjam:hover {
+    background-color: #14443f;
+    color: white;
+}
+
+
+
+
+
+
+
+/* Styling Tabel List Pinjam */
+.custom-table {
+    border-collapse: separate;
+    border-spacing: 0 10px; /* Jarak antar baris */
+}
+
+.custom-table thead th {
+    color: #333;
+    font-weight: 700;
+    font-size: 1.1rem;
+    padding-bottom: 20px;
+}
+
+.custom-table tbody tr {
+    border: 1.5px solid var(--tosca-tua);
+}
+
+.custom-table td {
+    padding: 20px !important;
+    vertical-align: middle;
+    background: white;
+    border-top: 1.5px solid var(--tosca-tua) !important;
+    border-bottom: 1.5px solid var(--tosca-tua) !important;
+}
+
+/* Border radius untuk row */
+.custom-table td:first-child {
+    border-left: 1.5px solid var(--tosca-tua) !important;
+    border-top-left-radius: 10px;
+    border-bottom-left-radius: 10px;
+}
+.custom-table td:last-child {
+    border-right: 1.5px solid var(--tosca-tua) !important;
+    border-top-right-radius: 10px;
+    border-bottom-right-radius: 10px;
+}
+
+/* Checkbox Custom */
+.custom-check {
+    width: 25px;
+    height: 25px;
+    border: 2px solid var(--tosca-tua);
+}
+
+.custom-check-white {
+    width: 25px;
+    height: 25px;
+    border: 2px solid white;
+    background-color: transparent;
+}
+
+/* Sticky Action Footer */
+.action-footer {
+    background-color: var(--tosca-tua);
+    height: 80px;
+    box-shadow: 0 -5px 15px rgba(0,0,0,0.1);
+}
+.btn-outline-light {
+    border: 2px solid white;
+    color: white;
+    transition: 0.3s;
+}
+
+.btn-outline-light:hover {
+    background-color: white;
+    color: var(--tosca-tua) !important;
+}
+
+/* Memastikan tulisan Pilih Semua tidak bergeser */
+label[for="checkAll"] {
+    margin-bottom: 0;
+}
