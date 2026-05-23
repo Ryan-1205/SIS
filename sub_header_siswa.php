@@ -18,12 +18,12 @@ $search_sub = isset($_GET['search']) ? $_GET['search'] : '';
             </a>
         <?php endif; ?>
 
-        <form action="list_barang.php" method="GET" class="search-bar" style="flex-grow: 1;">
+        <form action="list_barang.php" method="GET" class="search-bar" id="searchForm" style="flex-grow: 1;">
             <?php if ($current_page == 'list_barang.php') : ?>
                 <input type="hidden" name="kat" value="<?= htmlspecialchars($id_kat_sub); ?>">
             <?php endif; ?>
             
-            <input type="text" name="search" placeholder="Nama Barang" value="<?= htmlspecialchars($search_sub); ?>">
+            <input type="text" name="search" id="searchInput" placeholder="Nama Barang" value="<?= htmlspecialchars($search_sub); ?>" autocomplete="off">
             <button type="submit" style="background: transparent; border: none; position: absolute; right: 20px; top: 12px; color: var(--tosca-tua);">
                 🔍
             </button>
@@ -39,3 +39,48 @@ $search_sub = isset($_GET['search']) ? $_GET['search'] : '';
         </div>
     </div>
 </div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    const searchInput = document.getElementById('searchInput');
+    const searchForm = document.getElementById('searchForm');
+
+    if (searchInput && searchForm) {
+        searchInput.addEventListener('input', function() {
+            // Cek apakah seluruh kata kunci dihapus sampai kosong
+            if (this.value.trim() === '') {
+                
+                // 1. Ambil data parameter URL saat ini untuk mendeteksi halaman asal
+                const urlParams = new URLSearchParams(window.location.search);
+                const isGlobal = urlParams.get('global');
+                const idKat = urlParams.get('kat');
+
+                // 2. Jika awalnya nyari dari Halaman Utama (index.php)
+                if (isGlobal === 'true') {
+                    window.location.href = 'index.php';
+                } 
+                // 3. Jika awalnya nyari dari Halaman Kategori (list_barang.php?kat=...)
+                else if (idKat) {
+                    window.location.href = 'list_barang.php?kat=' + idKat;
+                } 
+                // 4. Cadangan terakhir jika tidak sengaja hilang parameternya
+                else {
+                    window.location.href = 'index.php';
+                }
+
+            } else {
+                // Jika masih ada huruf/kata kunci, jalankan live search otomatis
+                searchForm.submit();
+            }
+        });
+
+        // Memastikan kursor otomatis standby di akhir huruf setelah page reload
+        if (searchInput.value !== '') {
+            const val = searchInput.value;
+            searchInput.value = '';
+            searchInput.focus();
+            searchInput.value = val;
+        }
+    }
+});
+</script>
