@@ -1,4 +1,7 @@
-<?php include 'koneksi.php'; ?>
+<?php 
+include 'koneksi.php'; 
+session_start(); 
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -7,42 +10,13 @@
     <title>SIS - Sixseven Inventory System</title>
     
     <link rel="stylesheet" href="assets/bootstrap-5.3.8-dist/css/bootstrap.min.css">
-    
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
-    
-    <link rel="stylesheet" href="assets/css/style.css">
+    <link rel="stylesheet" href="assets/css/style.css?v=1.4">
 </head>
 <body>
 
-    <nav class="navbar-sis">
-        <div class="safe-container d-flex align-items-center justify-content-between px-3">
-            <a class="navbar-brand-sis text-white text-decoration-none fw-bold fs-4" href="#">
-                SIS <span class="brand-sub">Sixseven Inventory System</span>
-            </a>
-            <div class="d-flex">
-                <a href="#" class="nav-link-custom">Daftar</a>
-                <a href="#" class="nav-link-custom">Masuk</a>
-            </div>
-        </div>
-    </nav>
-
-    <div class="safe-container">
-        <div class="search-section px-3">
-            <h4 class="search-title">Cari Barang</h4>
-            <div class="search-bar">
-                <input type="text" placeholder="Nama Barang">
-                <span class="search-icon">🔍</span>
-            </div>
-            <div class="action-icons">
-                <div class="action-item">
-                    <span>📦</span> Pinjam Barang
-                </div>
-                <div class="action-item">
-                    <span>🔄</span> Kembalikan
-                </div>
-            </div>
-        </div>
-    </div>
+    <?php include 'header.php'; ?>
+    <?php include 'sub_header_siswa.php'; ?>
 
     <div class="safe-container px-3">
         <div class="category-wrapper">
@@ -52,7 +26,7 @@
                 <div class="col-md-3">
                     <a href="list_barang.php?kat=1" class="card-category">
                         <div class="white-box">
-                            <img src="assets/img/logo_berangkat.png" alt="Berangkat">
+                            <img src="assets/img/logoberangkat.png" alt="Berangkat">
                         </div>
                         <div class="category-name">
                             Aset <strong>Tim Berangkat</strong>
@@ -63,7 +37,7 @@
                 <div class="col-md-3">
                     <a href="list_barang.php?kat=2" class="card-category">
                         <div class="white-box">
-                            <img src="assets/img/logo_dkv.png" alt="DKV">
+                            <img src="assets/img/logodkv.png" alt="DKV">
                         </div>
                         <div class="category-name">
                             Aset <strong>Lab DKV</strong>
@@ -74,7 +48,7 @@
                 <div class="col-md-3">
                     <a href="list_barang.php?kat=3" class="card-category">
                         <div class="white-box">
-                            <img src="assets/img/logo_mm.png" alt="Multimedia">
+                            <img src="assets/img/logomm.png" alt="Multimedia">
                         </div>
                         <div class="category-name">
                             Aset <strong>Lab Multimedia</strong>
@@ -85,7 +59,7 @@
                 <div class="col-md-3">
                     <a href="list_barang.php?kat=4" class="card-category">
                         <div class="white-box">
-                            <img src="assets/img/logo_animasi.png" alt="Animasi">
+                            <img src="assets/img/logoanm.png" alt="Animasi">
                         </div>
                         <div class="category-name">
                             Aset <strong>Lab Animasi</strong>

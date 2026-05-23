@@ -300,3 +300,208 @@ body {
 label[for="checkAll"] {
     margin-bottom: 0;
 }
+
+
+/* --- TAMBAHAN UNTUK LOGIN & SUCCESS PAGE --- */
+
+.login-wrapper {
+    min-height: 80vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.login-card {
+    background-color: var(--tosca-muda);
+    border-radius: 15px;
+    padding: 40px 50px;
+    width: 100%;
+    max-width: 400px;
+    text-align: center;
+}
+
+.login-title {
+    color: var(--tosca-tua);
+    font-weight: 800;
+    font-size: 28px;
+    margin-bottom: 30px;
+}
+
+.login-input {
+    border-radius: 10px;
+    padding: 12px 20px;
+    border: none;
+    margin-bottom: 20px;
+    width: 100%;
+}
+
+.btn-login {
+    background-color: var(--tosca-tua);
+    color: white;
+    font-weight: 700;
+    width: 100%;
+    padding: 12px;
+    border-radius: 10px;
+    border: none;
+    margin-top: 10px;
+}
+
+.btn-login:hover {
+    background-color: #14443f;
+    color: white;
+}
+
+.login-link {
+    color: var(--tosca-tua);
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 600;
+    display: block;
+    margin-top: 20px;
+}
+
+.success-card {
+    border: 4px solid var(--tosca-tua);
+    border-radius: 20px;
+    padding: 40px;
+    max-width: 450px;
+    margin: 50px auto;
+    text-align: center;
+}
+
+.success-icon {
+    width: 80px;
+    height: 80px;
+    background-color: #34d399; /* Hijau sukses */
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 20px auto;
+    border: 5px solid #a7f3d0;
+}
+
+
+
+/* --- ADMIN STYLES --- */
+.admin-header {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    margin-top: 30px;
+    margin-bottom: 40px;
+}
+
+.admin-back-btn {
+    position: absolute;
+    left: 0;
+}
+
+.admin-tabs {
+    display: flex;
+    gap: 20px;
+    font-weight: 700;
+    font-size: 22px;
+}
+
+.admin-tab {
+    text-decoration: none;
+    color: var(--tosca-tua);
+    padding: 8px 25px;
+    border-radius: 30px;
+    transition: 0.3s;
+}
+
+.admin-tab.active {
+    background-color: var(--tosca-muda);
+}
+
+.admin-tab:hover {
+    background-color: #e2f1f0;
+}
+
+.admin-search-container {
+    max-width: 900px;
+    margin: 0 auto 30px auto;
+}
+
+.admin-search-form {
+    display: flex;
+    border: 2px solid var(--tosca-tua);
+    border-radius: 50px;
+    overflow: hidden;
+    padding: 3px;
+}
+
+.admin-search-form input {
+    flex-grow: 1;
+    border: none;
+    padding: 10px 25px;
+    outline: none;
+    color: var(--tosca-tua);
+}
+
+.admin-search-form button {
+    background-color: var(--tosca-tua);
+    color: white;
+    border: none;
+    padding: 8px 40px;
+    border-radius: 50px;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.admin-table-wrapper {
+    border: 2px solid var(--tosca-tua);
+    max-width: 900px;
+    margin: 0 auto 50px auto;
+}
+
+.admin-table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: center;
+}
+
+.admin-table th {
+    color: var(--tosca-tua);
+    font-weight: 700;
+    padding: 15px;
+    border-bottom: 2px solid var(--tosca-tua);
+}
+
+.admin-table td {
+    padding: 15px;
+    border-bottom: 1px solid var(--tosca-tua);
+    color: #333;
+    vertical-align: middle;
+}
+
+.admin-table tr:last-child td {
+    border-bottom: none;
+}
+
+.text-merah {
+    color: #dc3545;
+}
+
+.text-hijau {
+    color: #28a745;
+}
+
+.btn-admin-action {
+    background-color: var(--tosca-tua);
+    color: white;
+    text-decoration: none;
+    padding: 8px 30px;
+    border-radius: 20px;
+    font-weight: 700;
+    border: none;
+    cursor: pointer;
+}
+.btn-admin-action:hover {
+    color: white;
+    opacity: 0.9;
+}
