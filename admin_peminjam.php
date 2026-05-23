@@ -2,109 +2,178 @@
 session_start();
 include 'koneksi.php';
 
+// Validasi akses admin
 if (!isset($_SESSION['id_user']) || $_SESSION['role'] != 'admin') {
     header("Location: login.php");
     exit;
 }
+
+// SINKRONISASI AKURAT ID: Mengunci kategori lab berdasarkan ID User Admin yang login
+// id_user = 1 (timber) -> Kategori Lab 1
+// id_user = 2 (dkv)    -> Kategori Lab 2
+// id_user = 3 (mm)     -> Kategori Lab 3
+// id_user = 4 (anm)    -> Kategori Lab 4
+$id_kategori_admin = isset($_SESSION['id_user']) ? $_SESSION['id_user'] : 1;
+
+// Ambil nama kategori lab saat ini untuk judul dashboard admin
+$query_nama_lab = mysqli_query($conn, "SELECT nama_kategori FROM kategori WHERE id_kategori = '$id_kategori_admin'");
+$data_lab = mysqli_fetch_array($query_nama_lab);
+$nama_lab_tampil = $data_lab ? $data_lab['nama_kategori'] : "Laboratorium";
+
 $search = isset($_GET['search']) ? $_GET['search'] : '';
 ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Admin - Data Peminjam Sesi</title>
+    <title>Admin <?= $nama_lab_tampil; ?> - Data Peminjam & History</title>
     <link rel="stylesheet" href="assets/bootstrap-5.3.8-dist/css/bootstrap.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="assets/css/style.css?v=2.3">
+    <link rel="stylesheet" href="assets/css/style.css?v=2.7">
     <style>
-        /* Sinkronisasi style tombol dan text status sesuai halaman verifikasi */
-        .btn-detail-barang { 
-            background-color: #17a2b8; 
-            color: white; 
-            border: none; 
-            padding: 6px 15px; 
-            border-radius: 20px; 
-            font-weight: 600; 
-            font-size: 13px; 
-            text-decoration: none; 
-            cursor: pointer; 
+        /* Memastikan sinkronisasi max-width mengikuti batas safezone 80% */
+        .admin-search-container, .admin-table-wrapper, .section-title-admin {
+            max-width: 1000px !important;
+            margin-left: auto;
+            margin-right: auto;
         }
-        .btn-detail-barang:hover { 
-            background-color: #138496; 
-            color: white; 
-        }
-        .text-hijau { color: #28a745; font-weight: 600; }
-        .text-merah { color: #dc3545; font-weight: 600; }
+        
+        .btn-detail-barang { background-color: #17a2b8; color: white; border: none; padding: 6px 15px; border-radius: 20px; font-weight: 600; font-size: 13px; text-decoration: none; cursor: pointer; }
+        .btn-detail-barang:hover { background-color: #138496; color: white; }
+        .badge-approved { background-color: #28a745; color: white; padding: 5px 12px; border-radius: 15px; font-size: 13px; font-weight: 600; }
+        .badge-returned { background-color: #0288d1; color: white; padding: 5px 12px; border-radius: 15px; font-size: 13px; font-weight: 600; }
+        .badge-rejected { background-color: #dc3545; color: white; padding: 5px 12px; border-radius: 15px; font-size: 13px; font-weight: 600; }
+        .section-title-admin { color: var(--tosca-tua); font-weight: 700; }
     </style>
 </head>
 <body>
+    
     <?php include 'header.php'; ?>
-
-    <div class="safe-container px-3 pb-5">
+    
+    <div class="safe-container px-3 pb-5 mt-4">
         <?php include 'sub_header_admin.php'; ?>
+
+        <div class="mx-auto mt-4 mb-2" style="max-width: 1000px;">
+            <h4 class="fw-bold m-0" style="color: var(--tosca-tua);">📍 Log Aktivitas Peminjaman: <?= htmlspecialchars($nama_lab_tampil); ?></h4>
+        </div>
 
         <div class="admin-search-container">
             <form action="" method="GET" class="admin-search-form">
-                <input type="text" name="search" placeholder="Tuliskan Nama/NIS/Angkatan" value="<?= htmlspecialchars($search) ?>">
+                <input type="text" name="search" placeholder="Cari nama siswa..." value="<?= htmlspecialchars($search) ?>">
                 <button type="submit">Cari</button>
             </form>
         </div>
 
+        <h4 class="section-title-admin">🖥️ Daftar Siswa yang Sedang Meminjam Aset</h4>
         <div class="admin-table-wrapper">
             <table class="admin-table">
                 <thead>
                     <tr>
                         <th>NAMA PEMINJAM</th>
-                        <th>TANGGAL PEMINJAMAN</th>
-                        <th>DETAIL BARANG</th>
+                        <th>TANGGAL PINJAM</th>
+                        <th>RENCANA KEMBALI</th>
+                        <th>DAFTAR BARANG</th>
                         <th>STATUS</th>
+                        <th>PENGAWAS</th>
                     </tr>
                 </thead>
                 <tbody>
                     <?php 
-                    // Query dikunci per sesi (Kombinasi ID User + Tanggal Ambil) dengan GROUP_CONCAT
-                    $query = "SELECT p.tgl_pinjam, p.id_user, p.status_pengajuan, p.diverifikasi_oleh, u.nama_lengkap,
-                                     GROUP_CONCAT(b.nama_barang SEPARATOR ', ') as list_barang 
-                              FROM peminjaman p 
-                              JOIN users u ON p.id_user = u.id_user
-                              JOIN barang b ON p.id_barang = b.id_barang
-                              WHERE p.status_pengajuan IN ('disetujui', 'kembali')";
-                    
-                    if ($search != '') {
-                        $query .= " AND u.nama_lengkap LIKE '%$search%'";
-                    }
-                    
-                    $query .= " GROUP BY p.id_user, p.tgl_pinjam, p.status_pengajuan, p.diverifikasi_oleh 
-                                ORDER BY p.tgl_pinjam DESC";
-                                
-                    $sql = mysqli_query($conn, $query);
+                    // SINKRONISASI FILTER: Menambahkan klausa 'AND barang.id_kategori = $id_kategori_admin'
+                    $query_aktif = "SELECT peminjaman.tgl_pinjam, peminjaman.tgl_kembali_rencana, peminjaman.diverifikasi_oleh, users.nama_lengkap,
+                                           GROUP_CONCAT(CONCAT(barang.nama_barang, '::', peminjaman.status_pengajuan) SEPARATOR '||') as list_barang_status
+                                    FROM peminjaman 
+                                    JOIN users ON peminjaman.id_user = users.id_user 
+                                    JOIN barang ON peminjaman.id_barang = barang.id_barang 
+                                    WHERE peminjaman.status_pengajuan = 'disetujui' AND barang.id_kategori = '$id_kategori_admin'";
 
-                    if (mysqli_num_rows($sql) > 0) {
-                        while($row = mysqli_fetch_assoc($sql)) {
-                            // Logika penentuan status baris
-                            $status_text = ($row['status_pengajuan'] == 'kembali') ? 'Sudah Kembali' : 'Belum Kembali';
-                            $status_class = ($row['status_pengajuan'] == 'kembali') ? 'text-hijau' : 'text-merah';
-                            
-                            $tgl = date('d-m-Y', strtotime($row['tgl_pinjam']));
+                    if ($search != '') {
+                        $search_escaped = mysqli_real_escape_string($conn, $search);
+                        $query_aktif .= " AND users.nama_lengkap LIKE '%$search_escaped%'";
+                    }
+
+                    $query_aktif .= " GROUP BY peminjaman.id_user, peminjaman.tgl_pinjam, peminjaman.tgl_kembali_rencana, peminjaman.diverifikasi_oleh ORDER BY peminjaman.tgl_pinjam DESC";
+                    $sql_aktif = mysqli_query($conn, $query_aktif);
+
+                    if (mysqli_num_rows($sql_aktif) > 0) {
+                        while($row = mysqli_fetch_assoc($sql_aktif)) {
                     ?>
                     <tr>
-                        <td class="fw-bold"><?= htmlspecialchars($row['nama_lengkap']) ?></td>
-                        <td><?= $tgl ?></td>
+                        <td class="fw-bold text-dark"><?= htmlspecialchars($row['nama_lengkap']) ?></td>
+                        <td class="font-monospace text-secondary"><?= date('d M Y', strtotime($row['tgl_pinjam'])) ?></td>
+                        <td class="font-monospace text-danger fw-bold"><?= date('d M Y', strtotime($row['tgl_kembali_rencana'])) ?></td>
                         <td>
                             <button type="button" class="btn-detail-barang tombol-detail" 
                                     data-peminjam="<?= htmlspecialchars($row['nama_lengkap']) ?>"
-                                    data-tgl="<?= $tgl ?>"
-                                    data-barang="<?= htmlspecialchars($row['list_barang']) ?>"
-                                    data-pengawas="<?= !empty($row['diverifikasi_oleh']) ? htmlspecialchars($row['diverifikasi_oleh']) : 'Admin'; ?>">
-                                🔍 Lihat Barang
+                                    data-items="<?= htmlspecialchars($row['list_barang_status']) ?>">
+                                🔍 Lihat Aset
                             </button>
                         </td>
-                        <td class="<?= $status_class ?>"><?= $status_text ?></td>
+                        <td><span class="badge-approved">Sedang Dipinjam</span></td>
+                        <td class="text-muted fw-bold"><?= !empty($row['diverifikasi_oleh']) ? htmlspecialchars($row['diverifikasi_oleh']) : 'Admin'; ?></td>
                     </tr>
                     <?php 
                         }
                     } else {
-                        echo "<tr><td colspan='4' style='padding: 20px;'>Belum ada data peminjaman.</td></tr>";
+                        echo "<tr><td colspan='6' class='py-4 text-center text-muted'>Saat ini tidak ada aset dari lab ini yang sedang dipinjam siswa.</td></tr>";
+                    }
+                    ?>
+                </tbody>
+            </table>
+        </div>
+
+        <h4 class="section-title-admin mt-5">📜 History Riwayat Peminjaman (Selesai/Ditolak)</h4>
+        <div class="admin-table-wrapper">
+            <table class="admin-table">
+                <thead>
+                    <tr>
+                        <th>NAMA PEMINJAM</th>
+                        <th>TANGGAL PINJAM</th>
+                        <th>RENCANA KEMBALI</th>
+                        <th>KEMBALI ASLI</th>
+                        <th>DAFTAR BARANG</th>
+                        <th>VERIFIKATOR</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php 
+                    // SINKRONISASI FILTER: Menambahkan klausa 'AND barang.id_kategori = $id_kategori_admin'
+                    $query_history = "SELECT peminjaman.tgl_pinjam, peminjaman.tgl_kembali_rencana, peminjaman.tgl_kembali_asli, peminjaman.diverifikasi_oleh, users.nama_lengkap,
+                                             GROUP_CONCAT(CONCAT(barang.nama_barang, '::', peminjaman.status_pengajuan) SEPARATOR '||') as list_barang_status
+                                      FROM peminjaman 
+                                      JOIN users ON peminjaman.id_user = users.id_user 
+                                      JOIN barang ON peminjaman.id_barang = barang.id_barang 
+                                      WHERE peminjaman.status_pengajuan IN ('kembali', 'ditolak') AND barang.id_kategori = '$id_kategori_admin'";
+
+                    if ($search != '') {
+                        $query_history .= " AND users.nama_lengkap LIKE '%$search%'";
+                    }
+
+                    $query_history .= " GROUP BY peminjaman.id_user, peminjaman.tgl_pinjam, peminjaman.tgl_kembali_rencana, peminjaman.tgl_kembali_asli, peminjaman.diverifikasi_oleh ORDER BY peminjaman.tgl_pinjam DESC";
+                    $sql_history = mysqli_query($conn, $query_history);
+
+                    if (mysqli_num_rows($sql_history) > 0) {
+                        while($row_h = mysqli_fetch_assoc($sql_history)) {
+                            $tgl_kembali_asli = (!empty($row_h['tgl_kembali_asli']) && $row_h['tgl_kembali_asli'] != '0000-00-00') ? date('d M Y', strtotime($row_h['tgl_kembali_asli'])) : '-';
+                    ?>
+                    <tr>
+                        <td class="fw-bold text-dark"><?= htmlspecialchars($row_h['nama_lengkap']) ?></td>
+                        <td class="font-monospace text-secondary"><?= date('d M Y', strtotime($row_h['tgl_pinjam'])) ?></td>
+                        <td class="font-monospace text-muted"><?= date('d M Y', strtotime($row_h['tgl_kembali_rencana'])) ?></td>
+                        <td class="font-monospace text-success fw-bold"><?= $tgl_kembali_asli ?></td>
+                        <td>
+                            <button type="button" class="btn-detail-barang tombol-detail" 
+                                    data-peminjam="<?= htmlspecialchars($row_h['nama_lengkap']) ?>"
+                                    data-items="<?= htmlspecialchars($row_h['list_barang_status']) ?>">
+                                🔍 Lihat Barang
+                            </button>
+                        </td>
+                        <td class="fw-bold text-success"><?= !empty($row_h['diverifikasi_oleh']) ? htmlspecialchars($row_h['diverifikasi_oleh']) : 'Admin'; ?></td>
+                    </tr>
+                    <?php 
+                        }
+                    } else {
+                        echo "<tr><td colspan='6' class='py-4 text-center text-muted'>Belum ada rekaman riwayat peminjaman untuk kategori lab ini.</td></tr>";
                     }
                     ?>
                 </tbody>
@@ -112,33 +181,18 @@ $search = isset($_GET['search']) ? $_GET['search'] : '';
         </div>
     </div>
 
-    <div class="modal fade" id="modalDetailBarang" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content" style="border: 2px solid var(--tosca-tua); border-radius: 15px;">
-                <div class="modal-header text-white" style="background-color: var(--tosca-tua); border-top-left-radius: 12px; border-top-right-radius: 12px;">
-                    <h5 class="modal-title fw-bold">Detail Sesi Peminjaman</h5>
+    <div class="modal fade" id="modalDetail" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-md">
+            <div class="modal-content" style="border: 2px solid #17a2b8; border-radius: 20px;">
+                <div class="modal-header text-white" style="background-color: #17a2b8; border-top-left-radius: 17px; border-top-right-radius: 17px;">
+                    <h5 class="modal-title fw-bold">📋 Rincian Status Barang per Item</h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body p-4">
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                        <div>
-                            <small class="text-muted d-block">Nama Peminjam:</small>
-                            <h5 class="fw-bold text-dark m-0" id="txt_nama"></h5>
-                        </div>
-                        <div class="text-end">
-                            <small class="text-muted d-block">Tanggal Ambil:</small>
-                            <strong class="text-dark" id="txt_tanggal"></strong>
-                        </div>
-                    </div>
-                    
-                    <p class="mb-1 text-muted">Daftar Barang yang Diambil:</p>
-                    <ul class="list-group list-group-flush mb-4 border rounded" id="list_container">
-                        </ul>
-
-                    <div class="p-2 rounded bg-light border-start border-4 border-success">
-                        <small class="text-muted d-block">Petugas/Pengawas yang Memverifikasi:</small>
-                        <strong class="text-success" id="txt_pengawas"></strong>
-                    </div>
+                    <p class="text-muted fs-6">Siswa: <strong id="detail_nama_peminjam" class="text-dark"></strong></p>
+                    <hr>
+                    <ul id="container_list_barang" class="list-group list-group-flush fw-bold">
+                         </ul>
                 </div>
             </div>
         </div>
@@ -146,30 +200,45 @@ $search = isset($_GET['search']) ? $_GET['search'] : '';
 
     <script src="assets/bootstrap-5.3.8-dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        // JS Handler Modal Detail Barang
         const tombolDetail = document.querySelectorAll('.tombol-detail');
-        const modalBS = new bootstrap.Modal(document.getElementById('modalDetailBarang'));
-
+        const modalDetailBS = new bootstrap.Modal(document.getElementById('modalDetail'));
+        
         tombolDetail.forEach(btn => {
             btn.addEventListener('click', function() {
                 const nama = this.getAttribute('data-peminjam');
-                const tanggal = this.getAttribute('data-tgl');
-                const barangString = this.getAttribute('data-barang');
-                const pengawas = this.getAttribute('data-pengawas');
-
-                document.getElementById('txt_nama').innerText = nama;
-                document.getElementById('txt_tanggal').innerText = tanggal;
-                document.getElementById('txt_pengawas').innerText = "🔑 " + pengawas;
-
-                const arrayBarang = barangString.split(', ');
-                const container = document.getElementById('list_container');
+                const rawItemsData = this.getAttribute('data-items'); 
+                
+                document.getElementById('detail_nama_peminjam').innerText = nama;
+                
+                const container = document.getElementById('container_list_barang');
                 container.innerHTML = ''; 
-
-                arrayBarang.forEach(item => {
-                    container.innerHTML += `<li class="list-group-item d-flex align-items-center gap-2">📦 ${item}</li>`;
+                
+                const arraySesiBarang = rawItemsData.split('||');
+                
+                arraySesiBarang.forEach(itemRaw => {
+                    const bagian = itemRaw.split('::');
+                    const namaBarang = bagian[0];
+                    const statusBarang = bagian[1];
+                    
+                    let badgeHTML = '';
+                    if (statusBarang === 'disetujui') {
+                        badgeHTML = `<span class="badge badge-approved bg-success text-white px-2 py-1 rounded-pill" style="font-size:11px;">Dipinjam</span>`;
+                    } else if (statusBarang === 'kembali') {
+                        badgeHTML = `<span class="badge badge-returned bg-primary text-white px-2 py-1 rounded-pill" style="font-size:11px;">Selesai</span>`;
+                    } else if (statusBarang === 'ditolak') {
+                        badgeHTML = `<span class="badge badge-rejected bg-danger text-white px-2 py-1 rounded-pill" style="font-size:11px;">Ditolak</span>`;
+                    } else {
+                        badgeHTML = `<span class="badge bg-warning text-dark px-2 py-1 rounded-pill" style="font-size:11px;">Pending</span>`;
+                    }
+                    
+                    container.innerHTML += `
+                        <li class="list-group-item d-flex align-items-center justify-content-between border-bottom py-2 px-1">
+                            <span class="text-secondary">📦 ${namaBarang}</span>
+                            ${badgeHTML}
+                        </li>`;
                 });
-
-                modalBS.show();
+                
+                modalDetailBS.show();
             });
         });
     </script>

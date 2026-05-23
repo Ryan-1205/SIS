@@ -147,10 +147,6 @@ body {
     text-decoration: none;
 }
 
-
-
-
-
 /* Styling Tambahan untuk Tombol Back */
 .back-btn {
     text-decoration: none;
@@ -163,17 +159,17 @@ body {
     transform: scale(1.1);
 }
 
-/* Custom Grid untuk 5 Kolom Sesuai Gambar */
+/* Custom Grid untuk 5 Kolom */
 @media (min-width: 992px) {
     .col-md-2-4 {
         flex: 0 0 auto;
-        width: 20%; /* 100% / 5 = 20% */
+        width: 20%;
     }
 }
 
-/* Card Styling agar lebih mirip gambar */
+/* Card Styling Siswa */
 .item-card {
-    background-color: #d8ecea; /* Warna background card sedikit lebih soft */
+    background-color: #d8ecea;
     border-radius: 15px;
     padding: 12px;
     height: 100%;
@@ -184,7 +180,7 @@ body {
 .item-img-box {
     background-color: var(--tosca-tua);
     border-radius: 10px;
-    aspect-ratio: 1 / 1; /* Kotak sempurna */
+    aspect-ratio: 1 / 1;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -222,16 +218,10 @@ body {
     color: white;
 }
 
-
-
-
-
-
-
-/* Styling Tabel List Pinjam */
+/* Styling Tabel List Pinjam Siswa */
 .custom-table {
     border-collapse: separate;
-    border-spacing: 0 10px; /* Jarak antar baris */
+    border-spacing: 0 10px;
 }
 
 .custom-table thead th {
@@ -253,7 +243,6 @@ body {
     border-bottom: 1.5px solid var(--tosca-tua) !important;
 }
 
-/* Border radius untuk row */
 .custom-table td:first-child {
     border-left: 1.5px solid var(--tosca-tua) !important;
     border-top-left-radius: 10px;
@@ -296,14 +285,11 @@ body {
     color: var(--tosca-tua) !important;
 }
 
-/* Memastikan tulisan Pilih Semua tidak bergeser */
 label[for="checkAll"] {
     margin-bottom: 0;
 }
 
-
 /* --- TAMBAHAN UNTUK LOGIN & SUCCESS PAGE --- */
-
 .login-wrapper {
     min-height: 80vh;
     display: flex;
@@ -372,7 +358,7 @@ label[for="checkAll"] {
 .success-icon {
     width: 80px;
     height: 80px;
-    background-color: #34d399; /* Hijau sukses */
+    background-color: #34d399;
     color: white;
     border-radius: 50%;
     display: flex;
@@ -382,9 +368,7 @@ label[for="checkAll"] {
     border: 5px solid #a7f3d0;
 }
 
-
-
-/* --- ADMIN STYLES --- */
+/* --- MASTER ADMIN STYLES (SINKRON HAK AKSES DAN SAFEZONE 1000PX) --- */
 .admin-header {
     display: flex;
     align-items: center;
@@ -422,8 +406,10 @@ label[for="checkAll"] {
     background-color: #e2f1f0;
 }
 
-.admin-search-container {
-    max-width: 900px;
+/* Kunci konsistensi ukuran lebar maksimal 1000px (Sesuai batas aman 80%) */
+.admin-search-container,
+.admin-table-wrapper {
+    max-width: 1000px !important;
     margin: 0 auto 30px auto;
 }
 
@@ -432,7 +418,8 @@ label[for="checkAll"] {
     border: 2px solid var(--tosca-tua);
     border-radius: 50px;
     overflow: hidden;
-    padding: 3px;
+    padding: 4px;
+    background: white;
 }
 
 .admin-search-form input {
@@ -441,22 +428,26 @@ label[for="checkAll"] {
     padding: 10px 25px;
     outline: none;
     color: var(--tosca-tua);
+    font-size: 16px;
+    background: transparent;
 }
 
 .admin-search-form button {
     background-color: var(--tosca-tua);
     color: white;
     border: none;
-    padding: 8px 40px;
+    padding: 8px 50px;
     border-radius: 50px;
     font-weight: 700;
+    font-size: 18px;
     cursor: pointer;
 }
 
 .admin-table-wrapper {
     border: 2px solid var(--tosca-tua);
-    max-width: 900px;
-    margin: 0 auto 50px auto;
+    border-radius: 10px;
+    overflow: hidden;
+    background: white;
 }
 
 .admin-table {
@@ -466,16 +457,18 @@ label[for="checkAll"] {
 }
 
 .admin-table th {
-    color: var(--tosca-tua);
+    color: white;
+    background-color: var(--tosca-tua);
     font-weight: 700;
-    padding: 15px;
-    border-bottom: 2px solid var(--tosca-tua);
+    padding: 20px 15px;
+    font-size: 14px;
 }
 
 .admin-table td {
     padding: 15px;
-    border-bottom: 1px solid var(--tosca-tua);
+    border-bottom: 1px solid var(--tosca-muda);
     color: #333;
+    font-size: 15px;
     vertical-align: middle;
 }
 
@@ -495,13 +488,49 @@ label[for="checkAll"] {
     background-color: var(--tosca-tua);
     color: white;
     text-decoration: none;
-    padding: 8px 30px;
-    border-radius: 20px;
+    padding: 10px 45px;
+    border-radius: 30px;
     font-weight: 700;
+    font-size: 18px;
     border: none;
     cursor: pointer;
+    display: inline-block;
+    text-align: center;
 }
+
 .btn-admin-action:hover {
     color: white;
     opacity: 0.9;
+}
+
+/* Modifikasi Element Input Inline Tabel Master */
+.inline-input {
+    width: 100%;
+    padding: 6px 12px;
+    border: 2px solid var(--tosca-tua);
+    border-radius: 8px;
+    font-size: 15px;
+    outline: none;
+}
+
+.inline-select {
+    width: 100%;
+    padding: 6px 12px;
+    border: 2px solid var(--tosca-tua);
+    border-radius: 8px;
+    font-size: 15px;
+    background: white;
+    cursor: pointer;
+}
+
+/* Checkbox kontrol massal */
+.select-item-check, 
+.select-all-check {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+}
+
+.col-select-master {
+    display: none; /* Dikontrol dinamis via JavaScript Toggle */
 }

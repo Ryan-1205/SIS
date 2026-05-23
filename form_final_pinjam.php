@@ -2,39 +2,44 @@
 session_start();
 include 'koneksi.php';
 
-// Pastikan user sudah login
-if (!isset($_SESSION['id_user'])) {
-    echo "<script>alert('Silakan login terlebih dahulu!'); window.location.href='login.php';</script>";
+$id_user = isset($_SESSION['id_user']) ? $_SESSION['id_user'] : 0;
+
+if ($id_user == 0) {
+    header("Location: login.php");
     exit;
 }
 
-$id_user = $_SESSION['id_user'];
-$tgl_pinjam = date('Y-m-d');
-$tgl_kembali_rencana = date('Y-m-d'); // Default dikembalikan di hari yang sama (sesuaikan jika ada inputan)
+// Menangkap kiriman form
+if (isset($_POST['item_pilihan']) && isset($_POST['tgl_pinjam']) && isset($_POST['tgl_kembali_rencana'])) {
+    $item_array  = $_POST['item_pilihan']; // Berupa array ID barang di keranjang
+    $tgl_pinjam  = mysqli_real_escape_string($conn, $_POST['tgl_pinjam']);
+    $tgl_rencana = mysqli_real_escape_string($conn, $_POST['tgl_kembali_rencana']);
 
-if (isset($_POST['item_pilihan']) && !empty($_POST['item_pilihan'])) {
-    $items = $_POST['item_pilihan'];
-    
-    // Generate ID Peminjaman (Contoh sederhana pakai timestamp)
-    $id_pinjam_tampil = time(); 
+    $sukses_counter = 0;
 
-    foreach ($items as $id_barang) {
-        // Insert ke database peminjaman
-        mysqli_query($conn, "INSERT INTO peminjaman (id_user, id_barang, tgl_pinjam, tgl_kembali_rencana, status_pengajuan) 
-                             VALUES ('$id_user', '$id_barang', '$tgl_pinjam', '$tgl_kembali_rencana', 'pending')");
+    // Masukkan data barang ke database satu per satu menggunakan perulangan
+    foreach ($item_array as $id_barang) {
+        $id_barang = mysqli_real_escape_string($conn, $id_barang);
+
+        // Masukkan data transaksi ke tabel peminjaman dengan status default 'pending'
+        $query_insert = "INSERT INTO peminjaman (id_user, id_barang, tgl_pinjam, tgl_kembali_rencana, status_pengajuan) 
+                         VALUES ('$id_user', '$id_barang', '$tgl_pinjam', '$tgl_rencana', 'pending')";
         
-        // Update status barang menjadi dipinjam/pending
-        mysqli_query($conn, "UPDATE barang SET status='dipinjam' WHERE id_barang='$id_barang'");
-
-        // Hapus dari session keranjang
-        if (($key = array_search($id_barang, $_SESSION['keranjang'])) !== false) {
-            unset($_SESSION['keranjang'][$key]);
+        if (mysqli_query($conn, $query_insert)) {
+            $sukses_counter++;
         }
     }
-    
-    // Redirect ke halaman sukses membawa ID pinjam
-    header("Location: pinjam_berhasil.php?id_ref=$id_pinjam_tampil");
-    exit;
+
+    if ($sukses_counter > 0) {
+        // Kosongkan keranjang session karena pengajuan sukses masuk antrean DB
+        $_SESSION['keranjang'] = [];
+        echo "<script>
+                alert('Sukses! Berhasil mengirimkan $sukses_counter pengajuan aset ke antrean verifikasi admin.');
+                window.location.href='list_pinjam.php';
+              </script>";
+    } else {
+        echo "<script>alert('Gagal memproses pengajuan ke database.'); window.location.href='list_pinjam.php';</script>";
+    }
 } else {
     header("Location: list_pinjam.php");
 }

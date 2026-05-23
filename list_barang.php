@@ -3,19 +3,30 @@ include 'koneksi.php';
 session_start();
 
 // Ambil parameter kategori, pencarian, dan penanda global dari URL
-$id_kat = isset($_GET['kat']) ? $_GET['kat'] : 1;
 $search = isset($_GET['search']) ? $_GET['search'] : '';
 $global = isset($_GET['global']) ? $_GET['global'] : 'false';
 
-// Ambil nama kategori untuk judul (hanya relevan jika bukan pencarian global)
-$query_kat = mysqli_query($conn, "SELECT nama_kategori FROM kategori WHERE id_kategori = '$id_kat'");
-$data_kat  = mysqli_fetch_array($query_kat);
+// Mengambil ID User dari session login siswa
+$id_user_login = isset($_SESSION['id_user']) ? $_SESSION['id_user'] : 0;
 
-// Menentukan judul halaman secara cerdas
+// Memutus inisialisasi paksa ke kategori 1 saat global search aktif
+if ($global == 'true') {
+    $id_kat = 0;
+    $nama_kategori_tampil = "Semua Kategori Lab";
+} else {
+    // Jika bukan pencarian global, baru gunakan data parameter URL (default ke 1 jika kosong)
+    $id_kat = isset($_GET['kat']) ? $_GET['kat'] : 1;
+
+    $query_kat = mysqli_query($conn, "SELECT nama_kategori FROM kategori WHERE id_kategori = '$id_kat'");
+    $data_kat  = mysqli_fetch_array($query_kat);
+    $nama_kategori_tampil = $data_kat['nama_kategori'];
+}
+
+// Menentukan judul tab browser secara akurat berdasarkan scope pencarian
 if ($global == 'true' && !empty($search)) {
     $judul_halaman = "Hasil Pencarian Global: " . htmlspecialchars($search);
 } else {
-    $judul_halaman = "Daftar Aset - " . $data_kat['nama_kategori'] . ($search ? " (Pencarian: $search)" : "");
+    $judul_halaman = "Daftar Aset - " . $nama_kategori_tampil . ($search ? " (Pencarian: $search)" : "");
 }
 ?>
 
@@ -30,8 +41,8 @@ if ($global == 'true' && !empty($search)) {
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="assets/css/style.css?v=1.4">
     <style>
-        /* Gaya tambahan khusus untuk barang yang sedang dipinjam */
-        .item-card.is-borrowed {
+        /* Gaya tambahan khusus untuk barang yang sedang dipinjam, di keranjang, atau pending verifikasi */
+        .item-card.is-borrowed, .item-card.in-cart, .item-card.is-waiting {
             filter: grayscale(100%);
             opacity: 0.65;
             position: relative;
@@ -42,6 +53,33 @@ if ($global == 'true' && !empty($search)) {
             pointer-events: none; /* Mencegah klik */
             cursor: not-allowed;
         }
+        /* Style badge khusus penanda status pending verifikasi admin (Orange) */
+        .badge-status-menunggu {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background-color: #e67e22;
+            color: white;
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+            z-index: 2;
+        }
+        /* Style badge khusus penanda di keranjang (Toska Tua) */
+        .badge-status-keranjang {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background-color: var(--tosca-tua);
+            color: white;
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+            z-index: 2;
+        }
+        /* Style badge khusus penanda sedang dipinjam (Merah) */
         .badge-status-pinjam {
             position: absolute;
             top: 10px;
@@ -63,21 +101,18 @@ if ($global == 'true' && !empty($search)) {
 
     <div class="safe-container px-3 pb-5 mt-4">
         <h4 class="mb-4 fw-bold" style="color: var(--tosca-tua); padding-left: 5px;">
-            <?= $global == 'true' ? '🔍 Hasil Pencarian Semua Kategori' : '📂 Kategori: ' . $data_kat['nama_kategori']; ?>
+            <?= $global == 'true' ? '🔍 Hasil Pencarian Semua Kategori' : '📂 Kategori: ' . $nama_kategori_tampil; ?>
         </h4>
 
         <div class="row g-4 justify-content-start">
             <?php
-            // --- LOGIKA QUERY DINAMIS SESUAI REQUEST RYAN ---
-            // 1. Jika diketik dari halaman utama (Mencari di SEMUA kategori tanpa batas)
+            // --- EKSEKUSI FORK QUERY DINAMIS ---
             if ($global == 'true' && !empty($search)) {
                 $sql_barang = "SELECT * FROM barang WHERE nama_barang LIKE '%$search%'";
             } 
-            // 2. Jika diketik dari dalam kategori tertentu (Dikunci hanya kategori itu saja)
             else if (!empty($search)) {
                 $sql_barang = "SELECT * FROM barang WHERE id_kategori = '$id_kat' AND nama_barang LIKE '%$search%'";
             } 
-            // 3. Tampilan normal tanpa keyword pencarian (Berdasarkan kategori tab)
             else {
                 $sql_barang = "SELECT * FROM barang WHERE id_kategori = '$id_kat'";
             }
@@ -87,41 +122,42 @@ if ($global == 'true' && !empty($search)) {
             if(mysqli_num_rows($query_barang) > 0) {
                 while($row = mysqli_fetch_array($query_barang)) {
                     $id_barang = $row['id_barang'];
-                    $kategori_barang = $row['id_kategori']; // Mengambil ID kategori barang asli tiap row
+                    $kategori_barang = $row['id_kategori'];
 
-                    // --- LOGIKA CEK APAKAH BARANG SEDANG DIPINJAM ---
-                    $cek_pinjam = mysqli_query($conn, "SELECT id_pinjam FROM peminjaman WHERE id_barang = '$id_barang' AND status_pengajuan = 'disetujui'");
-                    $is_borrowed = (mysqli_num_rows($cek_pinjam) > 0) ? true : false;
+                    // --- SELEKSI SEPAKAT: LOGIKA PINJAM & LOGIKA PENDING YANG DI-FORK DENGAN ID_USER ---
+                    // 1. Status 'disetujui' (Berlaku GLOBAL untuk semua siswa karena barangnya emang lagi dipakai keluar)
+                    $cek_disetujui = mysqli_query($conn, "SELECT status_pengajuan FROM peminjaman WHERE id_barang = '$id_barang' AND status_pengajuan = 'disetujui' LIMIT 1");
+                    $is_borrowed = (mysqli_num_rows($cek_disetujui) > 0) ? true : false;
+
+                    // 2. Status 'pending' (Hanya berlaku INDIVIDUAL bagi user pemilik antrean pengajuan tersebut saja)
+                    $cek_pending_saya = mysqli_query($conn, "SELECT status_pengajuan FROM peminjaman WHERE id_barang = '$id_barang' AND status_pengajuan = 'pending' AND id_user = '$id_user_login' LIMIT 1");
+                    $is_waiting = (mysqli_num_rows($cek_pending_saya) > 0) ? true : false;
+                    
+                    // --- CEK APAKAH BARANG SUDAH ADA DI KERANJANG SESSION ---
+                    $is_in_cart = (isset($_SESSION['keranjang']) && in_array($id_barang, $_SESSION['keranjang'])) ? true : false;
                     
                     // --- LOGIKA MENENTUKAN GAMBAR TAMPIL / DEFAULT ---
                     if (!empty($row['foto']) && file_exists("assets/img/" . $row['foto'])) {
                         $gambar_tampil = "assets/img/" . $row['foto'];
                     } else {
-                        // Switch image disesuaikan dengan $kategori_barang asli dari record DB
                         switch ($kategori_barang) {
-                            case 1:
-                                $gambar_tampil = "assets/img/logoberangkat.png";
-                                break;
-                            case 2:
-                                $gambar_tampil = "assets/img/logodkv.png";
-                                break;
-                            case 3:
-                                $gambar_tampil = "assets/img/logomm.png";
-                                break;
-                            case 4:
-                                $gambar_tampil = "assets/img/logoanm.png";
-                                break;
-                            default:
-                                $gambar_tampil = "assets/img/logomm.png";
-                                break;
+                            case 1: $gambar_tampil = "assets/img/logoberangkat.png"; break;
+                            case 2: $gambar_tampil = "assets/img/logodkv.png"; break;
+                            case 3: $gambar_tampil = "assets/img/logomm.png"; break;
+                            case 4: $gambar_tampil = "assets/img/logoanm.png"; break;
+                            default: $gambar_tampil = "assets/img/logomm.png"; break;
                         }
                     }
             ?>
                 <div class="col-md-2-4 col-sm-6"> 
-                    <div class="item-card <?= $is_borrowed ? 'is-borrowed' : ''; ?>">
+                    <div class="item-card <?= $is_borrowed ? 'is-borrowed' : ($is_waiting ? 'is-waiting' : ($is_in_cart ? 'in-cart' : '')); ?>">
                         
                         <?php if ($is_borrowed): ?>
                             <span class="badge-status-pinjam">Dipinjam</span>
+                        <?php elseif ($is_waiting): ?>
+                            <span class="badge-status-menunggu">Menunggu Verifikasi</span>
+                        <?php elseif ($is_in_cart): ?>
+                            <span class="badge-status-keranjang">Di Keranjang</span>
                         <?php endif; ?>
 
                         <div class="item-img-box">
@@ -134,6 +170,10 @@ if ($global == 'true' && !empty($search)) {
 
                         <?php if ($is_borrowed): ?>
                             <a href="#" class="btn-pinjam disabled-btn">DIPINJAM</a>
+                        <?php elseif ($is_waiting): ?>
+                            <a href="#" class="btn-pinjam disabled-btn" style="background-color: #e67e22 !important;">PROSES...</a>
+                        <?php elseif ($is_in_cart): ?>
+                            <a href="#" class="btn-pinjam disabled-btn" style="background-color: #558b84 !important;">DI KERANJANG</a>
                         <?php else: ?>
                             <a href="keranjang_tambah.php?id=<?= $row['id_barang']; ?>" class="btn-pinjam">PINJAM</a>
                         <?php endif; ?>
