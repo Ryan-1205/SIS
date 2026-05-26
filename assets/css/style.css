@@ -980,3 +980,107 @@ body {
 .btn-reload:hover {
     background-color: #154d46;
 }
+
+
+/*FOOTER SIS (FIXED) */
+
+.footer-sis {
+    background-color: #ffffff !important;
+    padding: 50px 0 30px 0 !important;
+    border-top: 3px solid var(--tosca-tua) !important;
+    color: var(--tosca-tua) !important;
+}
+
+
+/* Judul KATEGORI */
+
+.footer-main-title {
+    color: #154d46 !important;
+    font-size: 26px;
+    font-weight: 700;
+    letter-spacing: 2px;
+}
+
+
+/* Nama Kategori Lab (Tim Berangkat, Lab DKV,) */
+
+.footer-category-heading {
+    color: var(--tosca-tua) !important;
+    font-size: 16px;
+    margin-bottom: 15px;
+    border-bottom: 2px solid #e2f1ee !important;
+    padding-bottom: 5px;
+    letter-spacing: 0.5px;
+}
+
+
+/* Kotak Scrollable tempat list nama barang */
+
+.footer-scroll-list {
+    max-height: 180px;
+    overflow-y: auto;
+    padding-right: 5px;
+}
+
+
+/* Kunci warna teks nama barang agar tetap HIJAU, bukan biru link */
+
+.footer-item-link {
+    display: block;
+    color: #4a7c76 !important;
+    opacity: 0.9;
+    text-decoration: none !important;
+    font-size: 14px;
+    padding: 5px 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    transition: all 0.2s ease;
+}
+
+
+/* Efek saat nama barang disorot mouse (Hover) */
+
+.footer-item-link:hover {
+    color: var(--tosca-tua) !important;
+    font-weight: 600;
+    padding-left: 5px;
+}
+
+
+/* Desain Kustom Scrollbar Kecil Halus di Sisi Kanan List */
+
+.footer-scroll-list::-webkit-scrollbar {
+    width: 4px;
+}
+
+.footer-scroll-list::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+}
+
+.footer-scroll-list::-webkit-scrollbar-thumb {
+    background: var(--tosca-muda);
+    border-radius: 4px;
+}
+
+
+/* Kotak Google Maps Kanan */
+
+.map-responsive-wrapper {
+    overflow: hidden;
+    position: relative;
+    height: 220px;
+    border-radius: 12px;
+    border: 2px solid var(--tosca-muda);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+}
+
+.map-responsive-wrapper iframe {
+    left: 0;
+    top: 0;
+    height: 100%;
+    width: 100%;
+    position: absolute;
+    border: 0;
+}
