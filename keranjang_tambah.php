@@ -11,14 +11,20 @@ if (isset($_GET['id'])) {
         $_SESSION['keranjang'] = [];
     }
 
-    // Masukkan id_barang ke dalam array jika belum ada (mencegah duplikat)
+    // Masukkan id_barang ke dalam array jika belum ada
     if (!in_array($id_barang, $_SESSION['keranjang'])) {
         array_push($_SESSION['keranjang'], $id_barang);
+        
+        // Redirect dengan status SUKSES karena barang baru masuk
+        header("Location: list_pinjam.php?status=sukses");
+        exit();
+    } else {
+        // Redirect dengan status ADA karena barangnya duplikat (sudah dipilih sebelumnya)
+        header("Location: list_pinjam.php?status=ada");
+        exit();
     }
-
-    // Redirect ke halaman list pinjam
-    header("Location: list_pinjam.php");
 } else {
     header("Location: index.php");
+    exit();
 }
 ?>
