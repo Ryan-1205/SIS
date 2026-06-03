@@ -981,20 +981,31 @@ body {
 }
 
 
-/*FOOTER SIS (FIXED) */
+/*FOOTER Homepage */
 
 .footer-sis {
-    background-color: #ffffff !important;
-    padding: 50px 0 30px 0 !important;
-    border-top: 3px solid var(--tosca-tua) !important;
-    color: var(--tosca-tua) !important;
+    background-color: #154d46 !important; 
+    margin-top: 90px !important; /* INI YANG MEMBUAT KOTAK HIJAUNYA TURUN */
+    color: white !important;
 }
 
+/*FOOTER*/
+.footer-simple {
+    background-color: #154d46 !important; /* Hijau yang sama dengan tema */
+    color: white !important;
+    padding: 30px 0 !important;
+    margin-top: 50px;
+}
+
+.footer-line {
+    border-top: 1px solid rgba(255, 255, 255, 0.3); /* Garis tipis */
+    margin: 0 10% 20px 10%; /* Memberikan jarak kiri-kanan agar garis tidak kepanjangan */
+}
 
 /* Judul KATEGORI */
 
 .footer-main-title {
-    color: #154d46 !important;
+    color: white !important;
     font-size: 26px;
     font-weight: 700;
     letter-spacing: 2px;
@@ -1004,7 +1015,7 @@ body {
 /* Nama Kategori Lab (Tim Berangkat, Lab DKV,) */
 
 .footer-category-heading {
-    color: var(--tosca-tua) !important;
+    color: white !important;
     font-size: 16px;
     margin-bottom: 15px;
     border-bottom: 2px solid #e2f1ee !important;
@@ -1026,7 +1037,7 @@ body {
 
 .footer-item-link {
     display: block;
-    color: #4a7c76 !important;
+    color: white !important;
     opacity: 0.9;
     text-decoration: none !important;
     font-size: 14px;
@@ -1041,7 +1052,7 @@ body {
 /* Efek saat nama barang disorot mouse (Hover) */
 
 .footer-item-link:hover {
-    color: var(--tosca-tua) !important;
+    color: white !important;
     font-weight: 600;
     padding-left: 5px;
 }
