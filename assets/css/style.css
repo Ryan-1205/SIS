@@ -561,7 +561,7 @@ label[for="checkAll"] {
 }
 
 .footer-main-title {
-    color: var(--tosca-tua) !important;
+    color: white  !important;
     font-size: 26px;
     font-weight: 700;
     letter-spacing: 2px;
