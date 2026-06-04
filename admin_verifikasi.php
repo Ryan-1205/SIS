@@ -74,9 +74,12 @@ $search = isset($_GET['search']) ? $_GET['search'] : '';
                 </thead>
                 <tbody>
                     <?php 
+                    // FIXED QUERY 100% SESUAI DATABASE LU LEK: no_hp & keperluan ditarik dari tabel peminjaman
                     $query = "SELECT peminjaman.tgl_pinjam, peminjaman.tgl_kembali_rencana, peminjaman.id_user, users.nama_lengkap,
                                      GROUP_CONCAT(barang.nama_barang SEPARATOR '||') as list_barang,
-                                     GROUP_CONCAT(peminjaman.id_pinjam SEPARATOR ',') as list_id_pinjam
+                                     GROUP_CONCAT(peminjaman.id_pinjam SEPARATOR ',') as list_id_pinjam,
+                                     GROUP_CONCAT(IFNULL(peminjaman.no_hp, '-') SEPARATOR '||') as list_no_hp,
+                                     GROUP_CONCAT(IFNULL(peminjaman.keperluan, '-') SEPARATOR '||') as list_keperluan
                               FROM peminjaman 
                               JOIN users ON peminjaman.id_user = users.id_user 
                               JOIN barang ON peminjaman.id_barang = barang.id_barang 
@@ -92,6 +95,12 @@ $search = isset($_GET['search']) ? $_GET['search'] : '';
 
                     if (mysqli_num_rows($sql) > 0) {
                         while($row = mysqli_fetch_assoc($sql)) {
+                            $arr_no_hp = explode('||', $row['list_no_hp']);
+                            $arr_keperluan = explode('||', $row['list_keperluan']);
+                            
+                            // Cek jika datanya kosong / NULL / strip bawaan database
+                            $no_hp_tampil = (!empty($arr_no_hp[0]) && $arr_no_hp[0] !== '-') ? $arr_no_hp[0] : 'Tidak Diisi Peminjam';
+                            $keperluan_tampil = (!empty($arr_keperluan[0]) && $arr_keperluan[0] !== '-') ? $arr_keperluan[0] : 'Tidak ada deskripsi keperluan';
                     ?>
                     <tr>
                         <td class="fw-bold text-dark px-3 text-start"><?= htmlspecialchars($row['nama_lengkap']) ?></td>
@@ -112,6 +121,8 @@ $search = isset($_GET['search']) ? $_GET['search'] : '';
                                     data-peminjam="<?= htmlspecialchars($row['nama_lengkap']) ?>"
                                     data-barang-raw="<?= htmlspecialchars($row['list_barang']) ?>"
                                     data-id-pinjam-raw="<?= htmlspecialchars($row['list_id_pinjam']) ?>"
+                                    data-no-hp="<?= htmlspecialchars($no_hp_tampil) ?>"
+                                    data-keperluan="<?= htmlspecialchars($keperluan_tampil) ?>"
                                     data-bs-toggle="modal" data-bs-target="#modalVerifikasi">
                                Verifikasi Sesi
                             </button>
@@ -153,8 +164,21 @@ $search = isset($_GET['search']) ? $_GET['search'] : '';
                 </div>
                 <form action="admin_verifikasi_proses.php" method="POST">
                     <div class="modal-body p-4">
-                        <p class="text-muted fs-6">Siswa Peminjam: <strong id="nama_peminjam_text" class="text-dark"></strong></p>
+                        <p class="text-muted fs-6 mb-3">Siswa Peminjam: <strong id="nama_peminjam_text" class="text-dark"></strong></p>
                         
+                        <div class="p-3 mb-4 rounded-3" style="background-color: #f4faf8; border-left: 4px solid var(--tosca-tua);">
+                            <div class="row">
+                                <div class="col-md-4 mb-2 mb-md-0">
+                                    <span class="text-muted small d-block">📱 No. HP / WhatsApp:</span>
+                                    <strong style="color: var(--tosca-tua);" id="modal_no_hp_text">-</strong>
+                                </div>
+                                <div class="col-md-8">
+                                    <span class="text-muted small d-block">📝 Deskripsi Keperluan:</span>
+                                    <p class="mb-0 text-dark fw-semibold small" id="modal_keperluan_text" style="line-height: 1.4;">-</p>
+                                </div>
+                            </div>
+                        </div>
+
                         <div class="mb-4">
                             <label class="form-label fw-bold mb-1" style="color: var(--tosca-tua);">Nama Pengawas Piket Hari Ini :</label>
                             <input type="text" name="pengawas" class="form-control" style="border: 2px solid var(--tosca-tua); border-radius: 10px; max-width: 400px;" placeholder="Tulis nama pengawas piket" required>
@@ -184,7 +208,7 @@ $search = isset($_GET['search']) ? $_GET['search'] : '';
 
     <script src="assets/bootstrap-5.3.8-dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        // JS MODAL DETAIL BARANG
+        // JS Detail
         const tombolDetail = document.querySelectorAll('.tombol-detail');
         const modalDetailBS = new bootstrap.Modal(document.getElementById('modalDetail'));
         
@@ -205,7 +229,7 @@ $search = isset($_GET['search']) ? $_GET['search'] : '';
             });
         });
 
-        // JS MODAL SELEKSI TINDAKAN PER ITEM
+        // JS Verifikasi
         const tombolSetuju = document.querySelectorAll('.tombol-setuju');
         tombolSetuju.forEach(button => {
             button.addEventListener('click', function() {
@@ -213,7 +237,12 @@ $search = isset($_GET['search']) ? $_GET['search'] : '';
                 const rawBarang = this.getAttribute('data-barang-raw').split('||');
                 const rawIdPinjam = this.getAttribute('data-id-pinjam-raw').split(',');
                 
+                const noHpSiswa = this.getAttribute('data-no-hp');
+                const keperluanSiswa = this.getAttribute('data-keperluan');
+                
                 document.getElementById('nama_peminjam_text').innerText = namaPeminjam;
+                document.getElementById('modal_no_hp_text').innerText = noHpSiswa;
+                document.getElementById('modal_keperluan_text').innerText = keperluanSiswa;
                 
                 const container = document.getElementById('container_item_verifikasi');
                 container.innerHTML = '';
@@ -240,10 +269,8 @@ $search = isset($_GET['search']) ? $_GET['search'] : '';
             });
         });
 
-        // Menangkap Hasil Response Dari admin_verifikasi_proses.php
         const adminParams = new URLSearchParams(window.location.search);
         const statusVerif = adminParams.get('status');
-        
         if (statusVerif === 'sukses_verif') {
             const namaPengawas = adminParams.get('pengawas');
             Swal.fire({
@@ -254,18 +281,10 @@ $search = isset($_GET['search']) ? $_GET['search'] : '';
             }).then(() => {
                 window.history.replaceState({}, document.title, window.location.pathname);
             });
-        } else if (statusVerif === 'parsial_verif') {
-            const suksesVal = adminParams.get('sukses');
-            const gagalVal = adminParams.get('gagal');
-            Swal.fire({
-                title: 'Verifikasi Selesai',
-                text: 'Sukses: ' + suksesVal + ' item, Gagal database: ' + gagalVal + ' item.',
-                icon: 'info',
-                confirmButtonColor: '#1e6f65'
-            }).then(() => {
-                window.history.replaceState({}, document.title, window.location.pathname);
-            });
         }
     </script>
+
+    <?php include 'footer.php'; ?>
+
 </body>
 </html>

@@ -193,6 +193,51 @@ $search = isset($_GET['search']) ? $_GET['search'] : '';
             </table>
         </div>
 
+        <h4 class="section-title-admin">📋 KEPERLUAN</h4>
+        <div class="admin-table-wrapper">
+            <table class="admin-table">
+                <thead>
+                    <tr>
+                        <th class="text-start" style="padding-left: 20px;">DESKRIPSI KEPERLUAN</th>
+                        <th width="300">NO. HANDPHONE</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php 
+                    // Query mengambil deskripsi keperluan & nomor hp dari peminjaman aktif yang disesuaikan dengan lab terkait
+                    $query_keperluan = "SELECT peminjaman.keperluan, peminjaman.no_hp FROM peminjaman 
+                                        JOIN barang ON peminjaman.id_barang = barang.id_barang
+                                        JOIN users ON peminjaman.id_user = users.id_user
+                                        WHERE peminjaman.status_pengajuan = 'disetujui' AND barang.id_kategori = '$id_kategori_admin'";
+
+                    // Integrasi fitur pencarian agar sinkron saat admin mencari nama siswa
+                    if ($search != '') {
+                        $query_keperluan .= " AND users.nama_lengkap LIKE '%" . mysqli_real_escape_string($conn, $search) . "%'";
+                    }
+
+                    $query_keperluan .= " ORDER BY peminjaman.id_pinjam DESC";
+                    $sql_keperluan = mysqli_query($conn, $query_keperluan);
+
+                    if (mysqli_num_rows($sql_keperluan) > 0) {
+                        while ($row_k = mysqli_fetch_assoc($sql_keperluan)) {
+                    ?>
+                    <tr>
+                        <td class="text-start text-dark" style="padding-left: 20px;">
+                            <?= htmlspecialchars($row_k['keperluan'] ? $row_k['keperluan'] : 'Tidak ada deskripsi keperluan'); ?>
+                        </td>
+                        <td class="fw-bold text-muted">
+                            <?= htmlspecialchars($row_k['no_hp'] ? $row_k['no_hp'] : '-'); ?>
+                        </td>
+                    </tr>
+                    <?php 
+                        }
+                    } else {
+                        echo "<tr><td colspan='2' class='py-4 text-center text-muted'>Tidak ada data keperluan aktif saat ini.</td></tr>";
+                    }
+                    ?>
+                </tbody>
+            </table>
+        </div>
         <h4 class="section-title-admin">📜 History Riwayat Peminjaman (Selesai/Ditolak)</h4>
         <div class="admin-table-wrapper">
             <table class="admin-table">
@@ -311,5 +356,8 @@ $search = isset($_GET['search']) ? $_GET['search'] : '';
             });
         });
     </script>
+
+    <?php include 'footer.php'; ?>
+
 </body>
 </html>

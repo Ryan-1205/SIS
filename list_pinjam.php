@@ -75,6 +75,7 @@ if (isset($_SERVER['HTTP_REFERER'])) {
             display: inline-block;
         }
         .status-pending { background-color: #ffeaa7; color: #e67e22; }
+        .status-approved { background-color: #d4edda; color: #155724; }
     </style>
 </head>
 <body>
@@ -196,7 +197,50 @@ if (isset($_SERVER['HTTP_REFERER'])) {
                 </table>
             </div>
 
-        </div>
+            <h4 class="fw-bold mb-3 mt-5" style="color: var(--tosca-tua); max-width: 1000px; margin: 40px auto 15px auto;">
+                🖥️ Aset yang Sedang Anda Pinjam saat Ini
+            </h4>
+            <div class="admin-table-wrapper">
+                <table class="admin-table">
+                    <thead>
+                        <tr>
+                            <th class="text-start" style="padding-left: 20px;">NAMA BARANG</th>
+                            <th>TANGGAL PINJAM</th>
+                            <th>RENCANA KEMBALI</th>
+                            <th class="text-start">KEPERLUAN</th>
+                            <th>NO. HANDPHONE</th>
+                            <th>STATUS</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php 
+                        $query_disetujui = "SELECT p.*, b.nama_barang FROM peminjaman p
+                                            JOIN barang b ON p.id_barang = b.id_barang
+                                            WHERE p.id_user = '$id_user_login' AND p.status_pengajuan = 'disetujui'
+                                            ORDER BY p.id_pinjam DESC";
+                        $res_disetujui = mysqli_query($conn, $query_disetujui);
+
+                        if (mysqli_num_rows($res_disetujui) > 0) {
+                            while ($disetujui = mysqli_fetch_assoc($res_disetujui)) {
+                        ?>
+                            <tr>
+                                <td class="fw-bold text-start text-dark" style="padding-left: 20px;"><?= htmlspecialchars($disetujui['nama_barang']); ?></td>
+                                <td class="font-monospace text-secondary"><?= date('d M Y', strtotime($disetujui['tgl_pinjam'])); ?></td>
+                                <td class="font-monospace text-danger fw-bold"><?= date('d M Y', strtotime($disetujui['tgl_kembali_rencana'])); ?></td>
+                                <td class="text-start text-muted small"><?= htmlspecialchars($disetujui['keperluan'] ? $disetujui['keperluan'] : '-'); ?></td>
+                                <td class="fw-bold text-secondary"><?= htmlspecialchars($disetujui['no_hp'] ? $disetujui['no_hp'] : '-'); ?></td>
+                                <td><span class="badge-status status-approved">✔️ Dipinjam</span></td>
+                            </tr>
+                        <?php 
+                            }
+                        } else {
+                            echo "<tr><td colspan='6' class='py-4 text-center text-muted'>Belum ada aset ter-verifikasi yang sedang kamu bawa.</td></tr>";
+                        }
+                        ?>
+                    </tbody>
+                </table>
+            </div>
+            </div>
 
         <div class="fixed-bottom action-footer" style="background-color: var(--tosca-tua, #1e6f65); height: 70px;">
             <div class="safe-container d-flex align-items-center justify-content-between px-3 h-100">
@@ -228,11 +272,11 @@ if (isset($_SERVER['HTTP_REFERER'])) {
             <div class="modal-dialog modal-dialog-centered">
                 <div class="modal-content" style="border: 2px solid var(--tosca-tua); border-radius: 20px;">
                     <div class="modal-header" style="background-color: var(--tosca-tua); border-top-left-radius: 17px; border-top-right-radius: 17px;">
-                        <h5 class="modal-title text-white fw-bold">📅 Tentukan Waktu Peminjaman</h5>
+                        <h5 class="modal-title text-white fw-bold">📅 Formulir Kelengkapan Pinjam</h5>
                         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <div class="modal-body p-4">
-                        <p class="text-muted small mb-3">Silakan tentukan tanggal pemakaian aset lab beserta batas rencana pengembaliannya.</p>
+                        <p class="text-muted small mb-3">Silakan tentukan tanggal pemakaian aset lab beserta data kontak operasional lu lek.</p>
                         
                         <div class="mb-3">
                             <label class="form-label fw-bold" style="color: var(--tosca-tua);">Tanggal Mulai Pinjam :</label>
@@ -242,6 +286,16 @@ if (isset($_SERVER['HTTP_REFERER'])) {
                         <div class="mb-3">
                             <label class="form-label fw-bold" style="color: var(--tosca-tua);">Rencana Tanggal Kembali :</label>
                             <input type="date" name="tgl_kembali_rencana" id="modal_tgl_kembali" class="form-control" style="border: 2px solid var(--tosca-tua); border-radius: 10px;" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold" style="color: var(--tosca-tua);">No. Handphone / WhatsApp Aktif :</label>
+                            <input type="text" name="no_hp" id="modal_no_hp" placeholder="Contoh: 081234567xxx" class="form-control" style="border: 2px solid var(--tosca-tua); border-radius: 10px;" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold" style="color: var(--tosca-tua);">Deskripsi Keperluan Meminjam :</label>
+                            <textarea name="keperluan" id="modal_keperluan" rows="2" placeholder="Sebutkan alasan penggunaan aset ini..." class="form-control" style="border: 2px solid var(--tosca-tua); border-radius: 10px;" required></textarea>
                         </div>
                     </div>
                     <div class="modal-footer border-0 px-4 pb-4">
@@ -292,7 +346,7 @@ if (isset($_SERVER['HTTP_REFERER'])) {
             });
         });
 
-        // LOGIKA INTERAKSI MODAL INPUT TANGGAL
+        // LOGIKA INTERAKSI MODAL INPUT TANGGAL + INPUT BARU
         const modalTanggalBS = new bootstrap.Modal(document.getElementById('modalInputTanggal'));
 
         function bukaModalTanggal() {
@@ -305,11 +359,14 @@ if (isset($_SERVER['HTTP_REFERER'])) {
         function validasiDanKirimForm() {
             const tglPinjam = document.getElementById('modal_tgl_pinjam').value;
             const tglKembali = document.getElementById('modal_tgl_kembali').value;
+            const noHp = document.getElementById('modal_no_hp').value.trim();
+            const keperluan = document.getElementById('modal_keperluan').value.trim();
 
-            if (tglPinjam === "" || tglKembali === "") {
+            // REVISI VALIDASI: Memastikan semua kolom wajib terisi penuh
+            if (tglPinjam === "" || tglKembali === "" || noHp === "" || keperluan === "") {
                 Swal.fire({
                     title: '⚠️ Input Belum Lengkap',
-                    text: 'Mohon lengkapi Tanggal Pinjam dan Rencana Kembali!',
+                    text: 'Mohon lengkapi Tanggal, No. HP, dan Deskripsi Keperluan!',
                     icon: 'warning',
                     confirmButtonColor: '#1e6f65'
                 });
@@ -329,7 +386,7 @@ if (isset($_SERVER['HTTP_REFERER'])) {
             document.getElementById('formPinjam').submit();
         }
 
-        // PERBAIKAN: Pembacaan URL Params disatukan biar tidak redeclare error!
+        // Pembacaan URL Params
         const urlParams = new URLSearchParams(window.location.search);
         const statusParam = urlParams.get('status');
 

@@ -286,5 +286,8 @@ $search = isset($_GET['search']) ? $_GET['search'] : '';
             }
         });
     </script>
+
+    <?php include 'footer.php'; ?>
+
 </body>
 </html>
