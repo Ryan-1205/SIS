@@ -40,7 +40,7 @@ session_start();
                             <img src="assets/img/logodkv.png" alt="DKV">
                         </div>
                         <div class="category-name">
-                            Aset <strong>Lab DKV</strong>
+                            Aset <strong>Lab DKV 1</strong>
                         </div>
                     </a>
                 </div>
@@ -51,7 +51,7 @@ session_start();
                             <img src="assets/img/logomm.png" alt="Multimedia">
                         </div>
                         <div class="category-name">
-                            Aset <strong>Lab Multimedia</strong>
+                            Aset <strong>Lab DKV 2</strong>
                         </div>
                     </a>
                 </div>
