@@ -33,14 +33,16 @@ if (isset($_POST['item_pilihan']) && isset($_POST['tgl_pinjam']) && isset($_POST
     if ($sukses_counter > 0) {
         // Kosongkan keranjang session karena pengajuan sukses masuk antrean DB
         $_SESSION['keranjang'] = [];
-        echo "<script>
-                alert('Sukses! Berhasil mengirimkan $sukses_counter pengajuan aset ke antrean verifikasi admin.');
-                window.location.href='list_pinjam.php';
-              </script>";
+        // DIUBAH: Redirect dengan parameter jumlah sukses
+        header("Location: list_pinjam.php?status=sukses_pinjam&count=$sukses_counter");
+        exit;
     } else {
-        echo "<script>alert('Gagal memproses pengajuan ke database.'); window.location.href='list_pinjam.php';</script>";
+        // DIUBAH: Redirect dengan parameter gagal
+        header("Location: list_pinjam.php?status=gagal_pinjam");
+        exit;
     }
 } else {
     header("Location: list_pinjam.php");
+    exit;
 }
 ?>

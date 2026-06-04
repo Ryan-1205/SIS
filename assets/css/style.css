@@ -1,11 +1,18 @@
+/* ==========================================================================
+   VARIABLE & CONFIGURATION
+   ========================================================================== */
+
 :root {
     --tosca-tua: #1d5c56;
     --tosca-muda: #c4e2e0;
+    --main-teal: #1e6f65;
+    --light-teal: #e2f1ee;
+    --border-teal: #1e6f65;
     --safe-zone: 80%;
 }
 
 body {
-    font-family: 'Poppins', sans-serif;
+    font-family: 'Poppins', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     background-color: #ffffff;
     margin: 0;
     padding: 0;
@@ -17,6 +24,11 @@ body {
     width: 100%;
 }
 
+
+/* ==========================================================================
+   HEADER & NAVBAR SECTION
+   ========================================================================== */
+
 .navbar-sis {
     background-color: var(--tosca-tua);
     padding: 15px 0;
@@ -27,6 +39,112 @@ body {
     font-size: 16px;
     margin-left: 10px;
 }
+
+.nav-link-custom {
+    color: white !important;
+    font-weight: 600;
+    margin-left: 25px;
+    text-decoration: none;
+}
+
+.sis-header {
+    background-color: var(--main-teal);
+    color: white;
+    padding: 15px 40px;
+    display: flex;
+    align-items: center;
+}
+
+.sis-logo {
+    font-weight: 800;
+    font-size: 24px;
+    letter-spacing: 1px;
+}
+
+.sis-title {
+    font-size: 14px;
+    margin-left: 15px;
+    opacity: 0.8;
+    border-left: 2px solid white;
+    padding-left: 15px;
+}
+
+
+/* ==========================================================================
+   NAVIGATION TABS & BUTTONS
+   ========================================================================== */
+
+.nav-section {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 60px;
+    margin-top: 40px;
+    position: relative;
+    max-width: 750px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.nav-item-custom {
+    font-size: 20px;
+    font-weight: bold;
+    color: var(--main-teal);
+    text-decoration: none;
+    padding: 5px 10px;
+}
+
+.nav-item-custom:hover {
+    color: var(--main-teal);
+    opacity: 0.8;
+    text-decoration: none;
+}
+
+.nav-item-custom.active {
+    background-color: var(--light-teal);
+    border-radius: 20px;
+    padding: 5px 25px;
+}
+
+.back-btn {
+    text-decoration: none;
+    transition: transform 0.2s;
+    display: flex;
+    align-items: center;
+}
+
+.back-btn:hover {
+    transform: scale(1.1);
+}
+
+.back-circle-btn {
+    border: 2px solid #000;
+    border-radius: 50%;
+    width: 42px;
+    height: 42px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: black;
+    font-size: 26px;
+    font-weight: bold;
+    text-decoration: none;
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+.back-circle-btn:hover {
+    background-color: #f0f0f0;
+    color: black;
+    text-decoration: none;
+}
+
+
+/* ==========================================================================
+   SEARCH BAR SECTION
+   ========================================================================== */
 
 .search-section {
     padding: 30px 0;
@@ -61,6 +179,52 @@ body {
     color: var(--tosca-tua);
 }
 
+.search-container {
+    max-width: 750px;
+    margin: 35px auto;
+    position: relative;
+    box-sizing: border-box;
+}
+
+.search-input {
+    border: 2px solid var(--border-teal);
+    border-radius: 25px;
+    padding: 12px 25px;
+    padding-right: 150px;
+    width: 100%;
+    font-size: 16px;
+    outline: none;
+    color: var(--main-teal);
+    box-sizing: border-box;
+}
+
+.search-input::placeholder {
+    color: #a0c2be;
+}
+
+.search-btn {
+    position: absolute;
+    right: 4px;
+    top: 4px;
+    bottom: 4px;
+    background-color: var(--main-teal);
+    color: white;
+    border: none;
+    border-radius: 20px;
+    padding: 0 45px;
+    font-weight: bold;
+    font-size: 16px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.search-btn:hover {
+    background-color: #154d46;
+}
+
 .action-icons {
     display: flex;
     gap: 25px;
@@ -79,6 +243,11 @@ body {
 .action-item:hover {
     opacity: 0.7;
 }
+
+
+/* ==========================================================================
+   CATEGORY & ITEM CARDS
+   ========================================================================== */
 
 .category-wrapper {
     background-color: var(--tosca-muda);
@@ -140,43 +309,15 @@ body {
     margin-top: 5px;
 }
 
-.nav-link-custom {
-    color: white !important;
-    font-weight: 600;
-    margin-left: 25px;
-    text-decoration: none;
-}
-
-/* Styling Tambahan untuk Tombol Back */
-
-.back-btn {
-    text-decoration: none;
-    transition: transform 0.2s;
-    display: flex;
-    align-items: center;
-}
-
-.back-btn:hover {
-    transform: scale(1.1);
-}
-
-
-/* Custom Grid untuk 5 Kolom Sesuai Gambar */
-
 @media (min-width: 992px) {
     .col-md-2-4 {
         flex: 0 0 auto;
         width: 20%;
-        /* 100% / 5 = 20% */
     }
 }
 
-
-/* Card Styling agar lebih mirip gambar */
-
 .item-card {
     background-color: #d8ecea;
-    /* Warna background card sedikit lebih soft */
     border-radius: 15px;
     padding: 12px;
     height: 100%;
@@ -188,7 +329,6 @@ body {
     background-color: var(--tosca-tua);
     border-radius: 10px;
     aspect-ratio: 1 / 1;
-    /* Kotak sempurna */
     display: flex;
     align-items: center;
     justify-content: center;
@@ -219,6 +359,7 @@ body {
     width: 100%;
     display: block;
     font-size: 0.9rem;
+    margin-top: auto;
 }
 
 .btn-pinjam:hover {
@@ -227,12 +368,13 @@ body {
 }
 
 
-/* Styling Tabel List Pinjam */
+/* ==========================================================================
+   TABLES DESIGN (SIS SYSTEM)
+   ========================================================================== */
 
 .custom-table {
     border-collapse: separate;
     border-spacing: 0 10px;
-    /* Jarak antar baris */
 }
 
 .custom-table thead th {
@@ -254,9 +396,6 @@ body {
     border-bottom: 1.5px solid var(--tosca-tua) !important;
 }
 
-
-/* Border radius untuk row */
-
 .custom-table td:first-child {
     border-left: 1.5px solid var(--tosca-tua) !important;
     border-top-left-radius: 10px;
@@ -269,207 +408,6 @@ body {
     border-bottom-right-radius: 10px;
 }
 
-
-/* Checkbox Custom */
-
-.custom-check {
-    width: 25px;
-    height: 25px;
-    border: 2px solid var(--tosca-tua);
-}
-
-.custom-check-white {
-    width: 25px;
-    height: 25px;
-    border: 2px solid white;
-    background-color: transparent;
-}
-
-
-/* Sticky Action Footer */
-
-.action-footer {
-    background-color: var(--tosca-tua);
-    height: 80px;
-    box-shadow: 0 -5px 15px rgba(0, 0, 0, 0.1);
-}
-
-.btn-outline-light {
-    border: 2px solid white;
-    color: white;
-    transition: 0.3s;
-}
-
-.btn-outline-light:hover {
-    background-color: white;
-    color: var(--tosca-tua) !important;
-}
-
-
-/* Memastikan tulisan Pilih Semua tidak bergeser */
-
-label[for="checkAll"] {
-    margin-bottom: 0;
-}
-
-
-/*DATA BARANG*/
-
- :root {
-    --main-teal: #1e6f65;
-    --light-teal: #e2f1ee;
-    --border-teal: #1e6f65;
-}
-
-body {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background-color: #ffffff;
-}
-
-
-/* Header Style */
-
-.sis-header {
-    background-color: var(--main-teal);
-    color: white;
-    padding: 15px 40px;
-    display: flex;
-    align-items: center;
-}
-
-.sis-logo {
-    font-weight: 800;
-    font-size: 24px;
-    letter-spacing: 1px;
-}
-
-.sis-title {
-    font-size: 14px;
-    margin-left: 15px;
-    opacity: 0.8;
-    border-left: 2px solid white;
-    padding-left: 15px;
-}
-
-
-/* Navigation Tabs - Dikalibrasi agar seirama dengan lebar elemen bawah */
-
-.nav-section {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 60px;
-    margin-top: 40px;
-    position: relative;
-    max-width: 750px;
-    margin-left: auto;
-    margin-right: auto;
-}
-
-.nav-item-custom {
-    font-size: 20px;
-    font-weight: bold;
-    color: var(--main-teal);
-    text-decoration: none;
-    padding: 5px 10px;
-}
-
-.nav-item-custom:hover {
-    color: var(--main-teal);
-    opacity: 0.8;
-    text-decoration: none;
-}
-
-.nav-item-custom.active {
-    background-color: var(--light-teal);
-    border-radius: 20px;
-    padding: 5px 25px;
-}
-
-
-/* Back Button Lingkaran - Presisi mengunci di sisi kiri area navigasi */
-
-.back-circle-btn {
-    border: 2px solid #000;
-    border-radius: 50%;
-    width: 42px;
-    height: 42px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: black;
-    font-size: 26px;
-    font-weight: bold;
-    text-decoration: none;
-    position: absolute;
-    left: 0;
-    top: 50%;
-    transform: translateY(-50%);
-}
-
-.back-circle-btn:hover {
-    background-color: #f0f0f0;
-    color: black;
-    text-decoration: none;
-}
-
-
-/* FIX KESEJAJARAN: Search Container dikunci 750px menggunakan border-box */
-
-.search-container {
-    max-width: 750px;
-    margin: 35px auto;
-    position: relative;
-    box-sizing: border-box;
-}
-
-.search-input {
-    border: 2px solid var(--border-teal);
-    border-radius: 25px;
-    padding: 12px 25px;
-    padding-right: 150px;
-    /* Jarak aman ketikan teks dari tombol */
-    width: 100%;
-    font-size: 16px;
-    outline: none;
-    color: var(--main-teal);
-    box-sizing: border-box;
-}
-
-.search-input::placeholder {
-    color: #a0c2be;
-}
-
-
-/* FIX KESEJAJARAN: Tombol Cari dikunci di dalam border kanan input text */
-
-.search-btn {
-    position: absolute;
-    right: 4px;
-    top: 4px;
-    bottom: 4px;
-    /* Tinggi otomatis presisi mengikuti input */
-    background-color: var(--main-teal);
-    color: white;
-    border: none;
-    border-radius: 20px;
-    padding: 0 45px;
-    font-weight: bold;
-    font-size: 16px;
-    cursor: pointer;
-    transition: background-color 0.2s;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.search-btn:hover {
-    background-color: #154d46;
-}
-
-
-/* Table Design - Menggunakan border tebal 3px khas sistem SIS lu */
-
 .table-container {
     max-width: 750px;
     margin: 0 auto;
@@ -504,443 +442,6 @@ body {
     padding: 15px;
     font-size: 15px;
 }
-
-
-/* Tombol + di Kolom Foto */
-
-.btn-foto-plus {
-    font-weight: bold;
-    font-size: 18px;
-    color: var(--main-teal);
-    cursor: pointer;
-}
-
-
-/* Container Tombol Kanan Bawah - Lebar disamakan agar rata kanan dengan tabel */
-
-.action-footer-container {
-    max-width: 750px;
-    margin: 30px auto;
-    display: flex;
-    justify-content: flex-end;
-    gap: 25px;
-    box-sizing: border-box;
-}
-
-
-/* Style Tombol Tambah & Edit */
-
-.btn-sis-action {
-    background-color: var(--main-teal);
-    color: white;
-    font-weight: bold;
-    border-radius: 20px;
-    padding: 8px 45px;
-    border: none;
-    font-size: 18px;
-    cursor: pointer;
-    transition: background-color 0.2s;
-}
-
-.btn-sis-action:hover {
-    background-color: #154d46;
-}
-
-
-/*DATA USER*/
-
- :root {
-    --main-teal: #1e6f65;
-    --light-teal: #e2f1ee;
-    --border-teal: #1e6f65;
-}
-
-body {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background-color: #ffffff;
-}
-
-
-/* Header Style */
-
-.sis-header {
-    background-color: var(--main-teal);
-    color: white;
-    padding: 15px 40px;
-    display: flex;
-    align-items: center;
-}
-
-.sis-logo {
-    font-weight: 800;
-    font-size: 24px;
-    letter-spacing: 1px;
-}
-
-.sis-title {
-    font-size: 14px;
-    margin-left: 15px;
-    opacity: 0.8;
-    border-left: 2px solid white;
-    padding-left: 15px;
-}
-
-
-/* Navigation Tabs - Dikalibrasi agar seirama dengan lebar elemen bawah */
-
-.nav-section {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 60px;
-    margin-top: 40px;
-    position: relative;
-    max-width: 750px;
-    margin-left: auto;
-    margin-right: auto;
-}
-
-.nav-item-custom {
-    font-size: 20px;
-    font-weight: bold;
-    color: var(--main-teal);
-    text-decoration: none;
-    padding: 5px 10px;
-}
-
-.nav-item-custom:hover {
-    color: var(--main-teal);
-    opacity: 0.8;
-    text-decoration: none;
-}
-
-.nav-item-custom.active {
-    background-color: var(--light-teal);
-    border-radius: 20px;
-    padding: 5px 25px;
-}
-
-
-/* Back Button Lingkaran - Presisi mengunci di sisi kiri area navigasi */
-
-.back-circle-btn {
-    border: 2px solid #000;
-    border-radius: 50%;
-    width: 42px;
-    height: 42px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: black;
-    font-size: 26px;
-    font-weight: bold;
-    text-decoration: none;
-    position: absolute;
-    left: 0;
-    top: 50%;
-    transform: translateY(-50%);
-}
-
-.back-circle-btn:hover {
-    background-color: #f0f0f0;
-    color: black;
-    text-decoration: none;
-}
-
-
-/* FIX KESEJAJARAN: Search Container dikunci 750px menggunakan border-box */
-
-.search-container {
-    max-width: 750px;
-    margin: 35px auto;
-    position: relative;
-    box-sizing: border-box;
-}
-
-.search-input {
-    border: 2px solid var(--border-teal);
-    border-radius: 25px;
-    padding: 12px 25px;
-    padding-right: 150px;
-    /* Jarak aman ketikan teks dari tombol */
-    width: 100%;
-    font-size: 16px;
-    outline: none;
-    color: var(--main-teal);
-    box-sizing: border-box;
-}
-
-.search-input::placeholder {
-    color: #a0c2be;
-}
-
-
-/* FIX KESEJAJARAN: Tombol Cari dikunci di dalam border kanan input text */
-
-.search-btn {
-    position: absolute;
-    right: 4px;
-    top: 4px;
-    bottom: 4px;
-    /* Tinggi otomatis presisi mengikuti input */
-    background-color: var(--main-teal);
-    color: white;
-    border: none;
-    border-radius: 20px;
-    padding: 0 45px;
-    font-weight: bold;
-    font-size: 16px;
-    cursor: pointer;
-    transition: background-color 0.2s;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.search-btn:hover {
-    background-color: #154d46;
-}
-
-
-/* Table Design - Menggunakan border tebal 3px khas sistem SIS lu */
-
-.table-container {
-    max-width: 750px;
-    margin: 0 auto;
-    border: 3px solid var(--border-teal);
-    border-radius: 12px;
-    overflow: hidden;
-    box-sizing: border-box;
-}
-
-.table-sis {
-    margin-bottom: 0;
-    width: 100%;
-}
-
-.table-sis th {
-    color: var(--main-teal);
-    text-align: center;
-    font-weight: 800;
-    border-bottom: 3px solid var(--border-teal) !important;
-    border-top: none;
-    text-transform: uppercase;
-    font-size: 15px;
-    background-color: #ffffff;
-    padding: 15px;
-}
-
-.table-sis td {
-    text-align: center;
-    vertical-align: middle;
-    color: #333;
-    border-top: 1px solid #c9dfdc;
-    padding: 15px;
-    font-size: 15px;
-}
-
-
-/*DATA PEMINJAM*/
-
-
-/* Mengatur variabel warna utama aplikasi (Teal/Toska) */
-
- :root {
-    --main-teal: #1e6f65;
-    --light-teal: #e2f1ee;
-    --border-teal: #1e6f65;
-}
-
-body {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background-color: #ffffff;
-}
-
-
-/* Header Style */
-
-.sis-header {
-    background-color: var(--main-teal);
-    color: white;
-    padding: 15px 40px;
-    display: flex;
-    align-items: center;
-}
-
-.sis-logo {
-    font-weight: 800;
-    font-size: 24px;
-    letter-spacing: 1px;
-}
-
-.sis-title {
-    font-size: 14px;
-    margin-left: 15px;
-    opacity: 0.8;
-    border-left: 2px solid white;
-    padding-left: 15px;
-}
-
-
-/* Navigation Tabs Container - Diselaraskan dengan lebar elemen bawah */
-
-.nav-section {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 60px;
-    margin-top: 40px;
-    position: relative;
-    max-width: 750px;
-    margin-left: auto;
-    margin-right: auto;
-}
-
-.nav-item-custom {
-    font-size: 20px;
-    font-weight: bold;
-    color: var(--main-teal);
-    text-decoration: none;
-    padding: 5px 10px;
-}
-
-.nav-item-custom:hover {
-    color: var(--main-teal);
-    opacity: 0.8;
-    text-decoration: none;
-}
-
-.nav-item-custom.active {
-    background-color: var(--light-teal);
-    border-radius: 20px;
-    padding: 5px 25px;
-}
-
-
-/* Back Button Lingkaran - Posisi pas mengunci di ujung kiri seksi navigasi */
-
-.back-circle-btn {
-    border: 2px solid #000;
-    border-radius: 50%;
-    width: 42px;
-    height: 42px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: black;
-    font-size: 26px;
-    font-weight: bold;
-    text-decoration: none;
-    position: absolute;
-    left: 0;
-    top: 50%;
-    transform: translateY(-50%);
-}
-
-.back-circle-btn:hover {
-    background-color: #f0f0f0;
-    color: black;
-    text-decoration: none;
-}
-
-
-/* FIX KESEJAJARAN: Search Container wajib pakai box-sizing border-box */
-
-.search-container {
-    max-width: 750px;
-    margin: 35px auto;
-    position: relative;
-    box-sizing: border-box;
-}
-
-
-/* Input field dibuat responsif 100% mengikuti kontainer utama */
-
-.search-input {
-    border: 2px solid var(--border-teal);
-    border-radius: 25px;
-    padding: 12px 25px;
-    padding-right: 150px;
-    /* Jarak teks ketikan agar tidak menabrak tombol */
-    width: 100%;
-    font-size: 16px;
-    outline: none;
-    color: var(--main-teal);
-    box-sizing: border-box;
-}
-
-.search-input::placeholder {
-    color: #a0c2be;
-}
-
-
-/* FIX KESEJAJARAN: Mengunci tombol "Cari" pas di sudut kanan dalam border input */
-
-.search-btn {
-    position: absolute;
-    right: 4px;
-    top: 4px;
-    bottom: 4px;
-    /* Mengunci tinggi tombol otomatis mengikuti tinggi input */
-    background-color: var(--main-teal);
-    color: white;
-    border: none;
-    border-radius: 20px;
-    padding: 0 45px;
-    /* Mengatur lebar tombol secara horizontal */
-    font-weight: bold;
-    font-size: 16px;
-    cursor: pointer;
-    transition: background-color 0.2s;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.search-btn:hover {
-    background-color: #154d46;
-}
-
-
-/* Table Design - Lebar maksimal dikunci sama persis dengan kolom pencarian */
-
-.table-container {
-    max-width: 750px;
-    margin: 0 auto;
-    border: 3px solid var(--border-teal);
-    border-radius: 12px;
-    overflow: hidden;
-    box-sizing: border-box;
-}
-
-.table-sis {
-    margin-bottom: 0;
-    width: 100%;
-}
-
-.table-sis th {
-    color: var(--main-teal);
-    text-align: center;
-    font-weight: 800;
-    border-bottom: 3px solid var(--border-teal) !important;
-    border-top: none;
-    text-transform: uppercase;
-    font-size: 15px;
-    background-color: #ffffff;
-    padding: 15px;
-}
-
-.table-sis td {
-    text-align: center;
-    vertical-align: middle;
-    color: #333;
-    border-top: 1px solid #c9dfdc;
-    padding: 15px;
-    font-size: 15px;
-}
-
-
-/* Status & Action Classes */
 
 .status-belum {
     color: #dc3545;
@@ -959,8 +460,76 @@ body {
     cursor: pointer;
 }
 
+.custom-check {
+    width: 25px;
+    height: 25px;
+    border: 2px solid var(--tosca-tua);
+}
 
-/* Reload Button Style */
+.custom-check-white {
+    width: 25px;
+    height: 25px;
+    border: 2px solid white;
+    background-color: transparent;
+}
+
+.btn-foto-plus {
+    font-weight: bold;
+    font-size: 18px;
+    color: var(--main-teal);
+    cursor: pointer;
+}
+
+
+/* ==========================================================================
+   BUTTON FOOTER ACTIONS
+   ========================================================================== */
+
+.action-footer {
+    background-color: var(--tosca-tua);
+    height: 80px;
+    box-shadow: 0 -5px 15px rgba(0, 0, 0, 0.1);
+}
+
+.btn-outline-light {
+    border: 2px solid white;
+    color: white;
+    transition: 0.3s;
+}
+
+.btn-outline-light:hover {
+    background-color: white;
+    color: var(--tosca-tua) !important;
+}
+
+label[for="checkAll"] {
+    margin-bottom: 0;
+}
+
+.action-footer-container {
+    max-width: 750px;
+    margin: 30px auto;
+    display: flex;
+    justify-content: flex-end;
+    gap: 25px;
+    box-sizing: border-box;
+}
+
+.btn-sis-action {
+    background-color: var(--main-teal);
+    color: white;
+    font-weight: bold;
+    border-radius: 20px;
+    padding: 8px 45px;
+    border: none;
+    font-size: 18px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.btn-sis-action:hover {
+    background-color: #154d46;
+}
 
 .btn-reload {
     background-color: var(--main-teal);
@@ -981,7 +550,9 @@ body {
 }
 
 
-/*FOOTER Homepage */
+/* ==========================================================================
+   MEGA FOOTER ELEGAN: BACKGROUND PUTIH - TEKS HIJAU SIS (FIXED & CLEAN)
+   ========================================================================== */
 
 .footer-sis {
     background-color: #154d46 !important; 
@@ -989,30 +560,12 @@ body {
     color: white !important;
 }
 
-/*FOOTER*/
-.footer-simple {
-    background-color: #154d46 !important; /* Hijau yang sama dengan tema */
-    color: white !important;
-    padding: 30px 0 !important;
-    margin-top: 50px;
-}
-
-.footer-line {
-    border-top: 1px solid rgba(255, 255, 255, 0.3); /* Garis tipis */
-    margin: 0 10% 20px 10%; /* Memberikan jarak kiri-kanan agar garis tidak kepanjangan */
-}
-
-/* Judul KATEGORI */
-
 .footer-main-title {
-    color: white !important;
+    color: var(--tosca-tua) !important;
     font-size: 26px;
     font-weight: 700;
     letter-spacing: 2px;
 }
-
-
-/* Nama Kategori Lab (Tim Berangkat, Lab DKV,) */
 
 .footer-category-heading {
     color: white !important;
@@ -1023,17 +576,11 @@ body {
     letter-spacing: 0.5px;
 }
 
-
-/* Kotak Scrollable tempat list nama barang */
-
 .footer-scroll-list {
     max-height: 180px;
     overflow-y: auto;
     padding-right: 5px;
 }
-
-
-/* Kunci warna teks nama barang agar tetap HIJAU, bukan biru link */
 
 .footer-item-link {
     display: block;
@@ -1048,17 +595,11 @@ body {
     transition: all 0.2s ease;
 }
 
-
-/* Efek saat nama barang disorot mouse (Hover) */
-
 .footer-item-link:hover {
     color: white !important;
     font-weight: 600;
     padding-left: 5px;
 }
-
-
-/* Desain Kustom Scrollbar Kecil Halus di Sisi Kanan List */
 
 .footer-scroll-list::-webkit-scrollbar {
     width: 4px;
@@ -1073,9 +614,6 @@ body {
     background: var(--tosca-muda);
     border-radius: 4px;
 }
-
-
-/* Kotak Google Maps Kanan */
 
 .map-responsive-wrapper {
     overflow: hidden;
@@ -1093,4 +631,11 @@ body {
     width: 100%;
     position: absolute;
     border: 0;
+}
+
+@media (max-width: 991.98px) {
+    .map-responsive-wrapper {
+        margin-top: 25px;
+        height: 230px;
+    }
 }

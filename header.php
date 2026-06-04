@@ -10,6 +10,9 @@ if (isset($_SESSION['id_user']) && $_SESSION['role'] == 'admin') {
     $logo_link = "admin_barang.php"; // Jika yang login adalah admin
 }
 ?>
+
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
 <nav class="navbar-sis">
     <div class="safe-container d-flex align-items-center justify-content-between px-3">
         <a class="navbar-brand-sis text-white text-decoration-none fw-bold fs-4" href="<?= $logo_link; ?>">
@@ -33,8 +36,7 @@ if (isset($_SESSION['id_user']) && $_SESSION['role'] == 'admin') {
                         <?php endif; ?>
                         
                         <li>
-                            <a class="dropdown-item py-2 text-danger fw-bold" href="logout.php" 
-                               onclick="return confirm('Yakin ingin keluar dari sistem SIS?')">
+                            <a class="dropdown-item py-2 text-danger fw-bold" href="javascript:void(0);" onclick="swalLogout()">
                                 🚪 Keluar / Logout
                             </a>
                         </li>
@@ -48,3 +50,22 @@ if (isset($_SESSION['id_user']) && $_SESSION['role'] == 'admin') {
         </div>
     </div>
 </nav>
+
+<script>
+function swalLogout() {
+    Swal.fire({
+        title: 'Yakin Ingin Keluar?',
+        text: 'Anda akan keluar dari sesi sistem inventory SIS.',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#dc3545', // Merah tegas untuk aksi keluar
+        cancelButtonColor: '#6c757d',
+        confirmButtonText: 'Ya, Keluar!',
+        cancelButtonText: 'Batal'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            window.location.href = 'logout.php';
+        }
+    });
+}
+</script>

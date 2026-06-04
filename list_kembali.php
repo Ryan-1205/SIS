@@ -93,6 +93,10 @@ $id_user = $_SESSION['id_user'];
         
         <div class="admin-table-wrapper">
             <form action="proses_kembali.php" method="POST" id="formKembali">
+                <input type="hidden" name="pengawas_penerima" id="hidden_pengawas">
+                
+                <input type="hidden" name="tgl_kembali_real" id="tgl_kembali_real">
+
                 <table class="admin-table">
                     <thead>
                         <tr>
@@ -111,8 +115,9 @@ $id_user = $_SESSION['id_user'];
                                          WHERE p.id_user = '$id_user' AND p.status_pengajuan = 'disetujui'";
                         
                         $query = mysqli_query($conn, $query_string);
+                        $hitung_data = mysqli_num_rows($query);
                         
-                        if (mysqli_num_rows($query) > 0) {
+                        if ($hitung_data > 0) {
                             while ($row = mysqli_fetch_assoc($query)) {
                         ?>
                             <tr>
@@ -133,6 +138,7 @@ $id_user = $_SESSION['id_user'];
                         ?>
                     </tbody>
                 </table>
+            </form> 
         </div>
     </div>
 
@@ -143,7 +149,7 @@ $id_user = $_SESSION['id_user'];
                 <label for="checkAll" style="cursor: pointer; user-select: none; font-size: 16px;">Pilih Semua</label>
             </div>
             <div>
-                <?php if (mysqli_num_rows($query) > 0): ?>
+                <?php if ($hitung_data > 0): ?>
                     <button type="button" class="btn btn-light fw-bold px-4 py-2 rounded-3" style="color: var(--tosca-tua) !important;" onclick="pemicuModalKembali()">
                         Kembalikan Sekarang
                     </button>
@@ -167,7 +173,7 @@ $id_user = $_SESSION['id_user'];
                     <p class="text-muted small">Harap isi nama staf / pengawas piket laboratorium yang berjaga dan menerima pengembalian barang fisik hari ini.</p>
                     <div class="mb-2">
                         <label class="form-label fw-bold" style="color: var(--tosca-tua);">Nama Pengawas Penerima :</label>
-                        <input type="text" name="pengawas_penerima" id="pengawas_penerima" class="form-control" style="border: 2px solid var(--tosca-tua); border-radius: 10px;" placeholder="Tulis nama pengawas laboratorium" required>
+                        <input type="text" id="pengawas_penerima" class="form-control" style="border: 2px solid var(--tosca-tua); border-radius: 10px;" placeholder="Tulis nama pengawas laboratorium" required>
                     </div>
                 </div>
                 <div class="modal-footer border-0 px-4 pb-4">
@@ -177,38 +183,40 @@ $id_user = $_SESSION['id_user'];
             </div>
         </div>
     </div>
-    </form> <div class="modal fade" id="modalKonfirmasiHapus" tabindex="-1" aria-hidden="true">
-        </div>
 
     <script src="assets/bootstrap-5.3.8-dist/js/bootstrap.bundle.min.js"></script>
     <script>
         const checkAll = document.getElementById('checkAll');
-        const itemCheckboxes = document.querySelectorAll('.item-checkbox');
         const modalVerifBS = new bootstrap.Modal(document.getElementById('modalVerifKembali'));
 
-        // Logika check/uncheck all
+        // Logika check/uncheck seluruh checkbox sekaligus
         if (checkAll) {
             checkAll.addEventListener('change', function() {
+                const itemCheckboxes = document.querySelectorAll('.item-checkbox');
                 itemCheckboxes.forEach(checkbox => {
                     checkbox.checked = checkAll.checked;
                 });
             });
         }
 
-        // Fungsi pemicu tombol footer
+        // Fungsi saat tombol "Kembalikan Sekarang" di footer diklik
         function pemicuModalKembali() {
-            // Validasi: Wajib memilih minimal 1 barang
-            if (document.querySelectorAll('.item-checkbox:checked').length === 0) {
+            // Validasi: Hitung berapa item yang diberi centang oleh user secara real-time
+            const totalDicentang = document.querySelectorAll('input[name="pinjam_pilihan[]"]:checked').length;
+            
+            console.log("Jumlah barang yang dicentang: " + totalDicentang);
+
+            if (totalDicentang === 0) {
                 alert('⚠️ Silakan pilih minimal satu barang yang ingin dikembalikan!');
-                return;
+                return; 
             }
-            // Kosongkan input modal dari cache ketikan sebelumnya lama
+
+            // Jika lolos validasi, reset form input nama pengawas lalu buka modal popup
             document.getElementById('pengawas_penerima').value = '';
-            // Munculkan popup modal verifikasi pengawas
             modalVerifBS.show();
         }
 
-        // Fungsi tombol final di dalam modal popup
+        // Fungsi final saat tombol "Konfirmasi & Serahkan" di dalam modal diklik
         function eksekusiFormKembali() {
             const namaPengawas = document.getElementById('pengawas_penerima').value.trim();
             
@@ -217,8 +225,28 @@ $id_user = $_SESSION['id_user'];
                 return;
             }
 
-            // Jalankan submit form jika data lengkap
+            // 1. Amankan nama pengawas ke input hidden utama
+            document.getElementById('hidden_pengawas').value = namaPengawas;
+
+            // 2. OTOMATISASI TANGGAL DEVICE: Tangkap waktu internal laptop/HP user saat ini juga
+            const dateDevice = new Date();
+            const year = dateDevice.getFullYear();
+            const month = String(dateDevice.getMonth() + 1).padStart(2, '0'); // Ditambah 1 karena index bulan JS mulai dari 0
+            const day = String(dateDevice.getDate()).padStart(2, '0');
+            
+            const formatTanggalMySQL = `${year}-${month}-${day}`;
+            
+            // 3. Amankan hasil konversi tanggal kalender device ke input hidden tgl_kembali_real
+            document.getElementById('tgl_kembali_real').value = formatTanggalMySQL;
+
+            // 4. Eksekusi kirim data ke file proses_kembali.php
             document.getElementById('formKembali').submit();
+        }
+
+        // Cek parameter error URL bawaan sistem
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('status') === 'gagal_pilih') {
+            alert('⚠️ Gagal memproses! Silakan pilih minimal satu barang yang ingin dikembalikan!');    
         }
     </script>
 </body>

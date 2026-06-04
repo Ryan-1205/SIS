@@ -107,5 +107,19 @@ session_start();
 </footer>
 
     <script src="assets/bootstrap-5.3.8-dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('msg') === 'welcome') {
+            Swal.fire({
+                title: 'Selamat Datang!',
+                text: 'Berhasil masuk ke aplikasi Sixseven Inventory System.',
+                icon: 'success',
+                confirmButtonColor: '#1e6f65'
+            }).then(() => {
+                window.history.replaceState({}, document.title, window.location.pathname);
+            });
+        }
+    </script>
 </body>
 </html>

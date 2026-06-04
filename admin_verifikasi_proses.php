@@ -35,15 +35,13 @@ if (isset($_POST['pengawas']) && isset($_POST['status_item'])) {
 
     // Tampilkan notifikasi umpan balik hasil eksekusi admin
     if ($gagal_count == 0) {
-        echo "<script>
-                alert('Verifikasi selektif berhasil diproses oleh $pengawas!');
-                window.location.href='admin_verifikasi.php';
-              </script>";
+        // DIUBAH: Redirect dengan status sukses dan nama pengawas
+        header("Location: admin_verifikasi.php?status=sukses_verif&pengawas=" . urlencode($pengawas));
+        exit;
     } else {
-        echo "<script>
-                alert('Proses verifikasi selesai. Sukses: $sukses_count item, Gagal database: $gagal_count item.');
-                window.location.href='admin_verifikasi.php';
-              </script>";
+        // DIUBAH: Redirect membawa info jumlah data sukses dan gagal
+        header("Location: admin_verifikasi.php?status=parsial_verif&sukses=$sukses_count&gagal=$gagal_count");
+        exit;
     }
 
 } else {

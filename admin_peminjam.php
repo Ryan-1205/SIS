@@ -9,10 +9,6 @@ if (!isset($_SESSION['id_user']) || $_SESSION['role'] != 'admin') {
 }
 
 // SINKRONISASI AKURAT ID: Mengunci kategori lab berdasarkan ID User Admin yang login
-// id_user = 1 (timber) -> Kategori Lab 1
-// id_user = 2 (dkv)    -> Kategori Lab 2
-// id_user = 3 (mm)     -> Kategori Lab 3
-// id_user = 4 (anm)    -> Kategori Lab 4
 $id_kategori_admin = isset($_SESSION['id_user']) ? $_SESSION['id_user'] : 1;
 
 // Ambil nama kategori lab saat ini untuk judul dashboard admin
@@ -31,19 +27,95 @@ $search = isset($_GET['search']) ? $_GET['search'] : '';
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="assets/css/style.css?v=2.7">
     <style>
-        /* Memastikan sinkronisasi max-width mengikuti batas safezone 80% */
-        .admin-search-container, .admin-table-wrapper, .section-title-admin {
-            max-width: 1000px !important;
-            margin-left: auto;
-            margin-right: auto;
+        /* REVISI: Mengaktifkan standar wrapper & table SIS warna tosca secara konsisten */
+        .admin-table-wrapper {
+            max-width: 1000px;
+            margin: 0 auto 30px auto;
+            border: 2px solid var(--tosca-tua);
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
         }
-        
-        .btn-detail-barang { background-color: #17a2b8; color: white; border: none; padding: 6px 15px; border-radius: 20px; font-weight: 600; font-size: 13px; text-decoration: none; cursor: pointer; }
-        .btn-detail-barang:hover { background-color: #138496; color: white; }
+        .admin-table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: center;
+        }
+        .admin-table th {
+            color: white;
+            background-color: var(--tosca-tua);
+            font-weight: 700;
+            padding: 15px 15px;
+            font-size: 14px;
+        }
+        .admin-table td {
+            padding: 15px 15px;
+            border-bottom: 1px solid var(--tosca-muda);
+            color: #333;
+            font-size: 14px;
+            vertical-align: middle;
+        }
+        .admin-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        /* REVISI: Tombol detail diselaraskan ke tema warna sistem SIS */
+        .btn-detail-barang { 
+            background-color: var(--tosca-tua); 
+            color: white; 
+            border: none; 
+            padding: 6px 15px; 
+            border-radius: 20px; 
+            font-weight: 600; 
+            font-size: 13px; 
+            text-decoration: none; 
+            cursor: pointer; 
+            transition: all 0.2s ease;
+        }
+        .btn-detail-barang:hover { 
+            opacity: 0.9;
+            color: white; 
+        }
+
+        /* Komponen Badge Status */
         .badge-approved { background-color: #28a745; color: white; padding: 5px 12px; border-radius: 15px; font-size: 13px; font-weight: 600; }
         .badge-returned { background-color: #0288d1; color: white; padding: 5px 12px; border-radius: 15px; font-size: 13px; font-weight: 600; }
         .badge-rejected { background-color: #dc3545; color: white; padding: 5px 12px; border-radius: 15px; font-size: 13px; font-weight: 600; }
-        .section-title-admin { color: var(--tosca-tua); font-weight: 700; }
+        
+        .section-title-admin { 
+            color: var(--tosca-tua); 
+            font-weight: 700; 
+            max-width: 1000px;
+            margin: 40px auto 15px auto;
+        }
+
+        /* REVISI: Merapikan bar form pencarian agar sejajar */
+        .admin-search-container {
+            max-width: 1000px;
+            margin: 20px auto;
+        }
+        .admin-search-form {
+            display: flex;
+            gap: 10px;
+        }
+        .admin-search-form input {
+            flex: 1;
+            padding: 10px 15px;
+            border: 2px solid var(--tosca-muda);
+            border-radius: 8px;
+            outline: none;
+        }
+        .admin-search-form input:focus {
+            border-color: var(--tosca-tua);
+        }
+        .admin-search-form button {
+            background-color: var(--tosca-tua);
+            color: white;
+            border: none;
+            padding: 10px 25px;
+            border-radius: 8px;
+            font-weight: 600;
+        }
     </style>
 </head>
 <body>
@@ -79,7 +151,6 @@ $search = isset($_GET['search']) ? $_GET['search'] : '';
                 </thead>
                 <tbody>
                     <?php 
-                    // SINKRONISASI FILTER: Menambahkan klausa 'AND barang.id_kategori = $id_kategori_admin'
                     $query_aktif = "SELECT peminjaman.tgl_pinjam, peminjaman.tgl_kembali_rencana, peminjaman.diverifikasi_oleh, users.nama_lengkap,
                                            GROUP_CONCAT(CONCAT(barang.nama_barang, '::', peminjaman.status_pengajuan) SEPARATOR '||') as list_barang_status
                                     FROM peminjaman 
@@ -99,7 +170,7 @@ $search = isset($_GET['search']) ? $_GET['search'] : '';
                         while($row = mysqli_fetch_assoc($sql_aktif)) {
                     ?>
                     <tr>
-                        <td class="fw-bold text-dark"><?= htmlspecialchars($row['nama_lengkap']) ?></td>
+                        <td class="fw-bold text-dark text-start" style="padding-left: 20px;"><?= htmlspecialchars($row['nama_lengkap']) ?></td>
                         <td class="font-monospace text-secondary"><?= date('d M Y', strtotime($row['tgl_pinjam'])) ?></td>
                         <td class="font-monospace text-danger fw-bold"><?= date('d M Y', strtotime($row['tgl_kembali_rencana'])) ?></td>
                         <td>
@@ -115,14 +186,14 @@ $search = isset($_GET['search']) ? $_GET['search'] : '';
                     <?php 
                         }
                     } else {
-                        echo "<tr><td colspan='6' class='py-4 text-center text-muted'>Saat ini tidak ada aset dari lab ini yang sedang dipinjam siswa.</td></tr>";
+                        echo "<tr><td colspan='6' class='py-5 text-center text-muted'><h5>Saat ini tidak ada aset dari lab ini yang sedang dipinjam siswa.</h5></td></tr>";
                     }
                     ?>
                 </tbody>
             </table>
         </div>
 
-        <h4 class="section-title-admin mt-5">📜 History Riwayat Peminjaman (Selesai/Ditolak)</h4>
+        <h4 class="section-title-admin">📜 History Riwayat Peminjaman (Selesai/Ditolak)</h4>
         <div class="admin-table-wrapper">
             <table class="admin-table">
                 <thead>
@@ -137,7 +208,6 @@ $search = isset($_GET['search']) ? $_GET['search'] : '';
                 </thead>
                 <tbody>
                     <?php 
-                    // SINKRONISASI FILTER: Menambahkan klausa 'AND barang.id_kategori = $id_kategori_admin'
                     $query_history = "SELECT peminjaman.tgl_pinjam, peminjaman.tgl_kembali_rencana, peminjaman.tgl_kembali_asli, peminjaman.diverifikasi_oleh, users.nama_lengkap,
                                              GROUP_CONCAT(CONCAT(barang.nama_barang, '::', peminjaman.status_pengajuan) SEPARATOR '||') as list_barang_status
                                       FROM peminjaman 
@@ -146,7 +216,7 @@ $search = isset($_GET['search']) ? $_GET['search'] : '';
                                       WHERE peminjaman.status_pengajuan IN ('kembali', 'ditolak') AND barang.id_kategori = '$id_kategori_admin'";
 
                     if ($search != '') {
-                        $query_history .= " AND users.nama_lengkap LIKE '%$search%'";
+                        $query_history .= " AND users.nama_lengkap LIKE '%" . mysqli_real_escape_string($conn, $search) . "%'";
                     }
 
                     $query_history .= " GROUP BY peminjaman.id_user, peminjaman.tgl_pinjam, peminjaman.tgl_kembali_rencana, peminjaman.tgl_kembali_asli, peminjaman.diverifikasi_oleh ORDER BY peminjaman.tgl_pinjam DESC";
@@ -157,7 +227,7 @@ $search = isset($_GET['search']) ? $_GET['search'] : '';
                             $tgl_kembali_asli = (!empty($row_h['tgl_kembali_asli']) && $row_h['tgl_kembali_asli'] != '0000-00-00') ? date('d M Y', strtotime($row_h['tgl_kembali_asli'])) : '-';
                     ?>
                     <tr>
-                        <td class="fw-bold text-dark"><?= htmlspecialchars($row_h['nama_lengkap']) ?></td>
+                        <td class="fw-bold text-dark text-start" style="padding-left: 20px;"><?= htmlspecialchars($row_h['nama_lengkap']) ?></td>
                         <td class="font-monospace text-secondary"><?= date('d M Y', strtotime($row_h['tgl_pinjam'])) ?></td>
                         <td class="font-monospace text-muted"><?= date('d M Y', strtotime($row_h['tgl_kembali_rencana'])) ?></td>
                         <td class="font-monospace text-success fw-bold"><?= $tgl_kembali_asli ?></td>
@@ -173,7 +243,7 @@ $search = isset($_GET['search']) ? $_GET['search'] : '';
                     <?php 
                         }
                     } else {
-                        echo "<tr><td colspan='6' class='py-4 text-center text-muted'>Belum ada rekaman riwayat peminjaman untuk kategori lab ini.</td></tr>";
+                        echo "<tr><td colspan='6' class='py-5 text-center text-muted'><h5>Belum ada rekaman riwayat peminjaman untuk kategori lab ini.</h5></td></tr>";
                     }
                     ?>
                 </tbody>
@@ -183,16 +253,15 @@ $search = isset($_GET['search']) ? $_GET['search'] : '';
 
     <div class="modal fade" id="modalDetail" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered modal-md">
-            <div class="modal-content" style="border: 2px solid #17a2b8; border-radius: 20px;">
-                <div class="modal-header text-white" style="background-color: #17a2b8; border-top-left-radius: 17px; border-top-right-radius: 17px;">
+            <div class="modal-content" style="border: 2px solid var(--tosca-tua); border-radius: 20px;">
+                <div class="modal-header text-white" style="background-color: var(--tosca-tua); border-top-left-radius: 17px; border-top-right-radius: 17px;">
                     <h5 class="modal-title fw-bold">📋 Rincian Status Barang per Item</h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body p-4">
                     <p class="text-muted fs-6">Siswa: <strong id="detail_nama_peminjam" class="text-dark"></strong></p>
                     <hr>
-                    <ul id="container_list_barang" class="list-group list-group-flush fw-bold">
-                         </ul>
+                    <ul id="container_list_barang" class="list-group list-group-flush fw-bold"></ul>
                 </div>
             </div>
         </div>
@@ -222,11 +291,11 @@ $search = isset($_GET['search']) ? $_GET['search'] : '';
                     
                     let badgeHTML = '';
                     if (statusBarang === 'disetujui') {
-                        badgeHTML = `<span class="badge badge-approved bg-success text-white px-2 py-1 rounded-pill" style="font-size:11px;">Dipinjam</span>`;
+                        badgeHTML = `<span class="badge bg-success text-white px-2 py-1 rounded-pill" style="font-size:11px;">Dipinjam</span>`;
                     } else if (statusBarang === 'kembali') {
-                        badgeHTML = `<span class="badge badge-returned bg-primary text-white px-2 py-1 rounded-pill" style="font-size:11px;">Selesai</span>`;
+                        badgeHTML = `<span class="badge bg-primary text-white px-2 py-1 rounded-pill" style="font-size:11px;">Selesai</span>`;
                     } else if (statusBarang === 'ditolak') {
-                        badgeHTML = `<span class="badge badge-rejected bg-danger text-white px-2 py-1 rounded-pill" style="font-size:11px;">Ditolak</span>`;
+                        badgeHTML = `<span class="badge bg-danger text-white px-2 py-1 rounded-pill" style="font-size:11px;">Ditolak</span>`;
                     } else {
                         badgeHTML = `<span class="badge bg-warning text-dark px-2 py-1 rounded-pill" style="font-size:11px;">Pending</span>`;
                     }

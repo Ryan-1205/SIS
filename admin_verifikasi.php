@@ -8,11 +8,6 @@ if (!isset($_SESSION['id_user']) || $_SESSION['role'] != 'admin') {
     exit;
 }
 
-// SINKRONISASI AKURAT ID: Mengunci antrean verifikasi berdasarkan ID User Admin yang login
-// id_user = 1 (timber) -> Kategori Lab 1
-// id_user = 2 (dkv)    -> Kategori Lab 2
-// id_user = 3 (mm)     -> Kategori Lab 3
-// id_user = 4 (anm)    -> Kategori Lab 4
 $id_kategori_admin = isset($_SESSION['id_user']) ? $_SESSION['id_user'] : 1;
 
 // Ambil nama kategori lab saat ini untuk judul dashboard admin
@@ -30,8 +25,8 @@ $search = isset($_GET['search']) ? $_GET['search'] : '';
     <link rel="stylesheet" href="assets/bootstrap-5.3.8-dist/css/bootstrap.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="assets/css/style.css?v=2.6">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
-        /* Memastikan sinkronisasi max-width mengikuti batas safezone 80% */
         .admin-search-container, .admin-table-wrapper, .section-title-admin {
             max-width: 1000px !important;
             margin-left: auto;
@@ -65,20 +60,20 @@ $search = isset($_GET['search']) ? $_GET['search'] : '';
             </form>
         </div>
 
-        <div class="admin-table-wrapper">
-            <table class="admin-table">
+        <div class="admin-table-wrapper table-responsive">
+            <table class="admin-table w-100 table-striped align-middle">
                 <thead>
                     <tr>
-                        <th>NAMA PEMINJAM</th>
-                        <th>TANGGAL PINJAM</th>
-                        <th>RENCANA KEMBALI</th> <th>DETAIL BARANG</th>
-                        <th>STATUS</th>
-                        <th>AKSI</th>
+                        <th class="py-3 px-3 text-start">NAMA PEMINJAM</th>
+                        <th class="py-3 px-3 text-center">TANGGAL PINJAM</th>
+                        <th class="py-3 px-3 text-center">RENCANA KEMBALI</th> 
+                        <th class="py-3 px-3 text-center">DETAIL BARANG</th>
+                        <th class="py-3 px-3 text-center">STATUS</th>
+                        <th class="py-3 px-3 text-center">AKSI</th>
                     </tr>
                 </thead>
                 <tbody>
                     <?php 
-                    // PROTEKSI SELEKSI LAB: Hanya menarik barang yang id_kategori-nya sesuai dengan lab admin saat ini
                     $query = "SELECT peminjaman.tgl_pinjam, peminjaman.tgl_kembali_rencana, peminjaman.id_user, users.nama_lengkap,
                                      GROUP_CONCAT(barang.nama_barang SEPARATOR '||') as list_barang,
                                      GROUP_CONCAT(peminjaman.id_pinjam SEPARATOR ',') as list_id_pinjam
@@ -92,7 +87,6 @@ $search = isset($_GET['search']) ? $_GET['search'] : '';
                         $query .= " AND users.nama_lengkap LIKE '%$search_escaped%'";
                     }
 
-                    // Dikelompokkan berdasarkan waktu input pinjam dan tenggat kembali rencana siswa
                     $query .= " GROUP BY peminjaman.id_user, peminjaman.tgl_pinjam, peminjaman.tgl_kembali_rencana ORDER BY peminjaman.tgl_pinjam ASC";
                     $sql = mysqli_query($conn, $query);
 
@@ -100,18 +94,18 @@ $search = isset($_GET['search']) ? $_GET['search'] : '';
                         while($row = mysqli_fetch_assoc($sql)) {
                     ?>
                     <tr>
-                        <td class="fw-bold text-dark"><?= htmlspecialchars($row['nama_lengkap']) ?></td>
-                        <td class="font-monospace text-secondary"><?= date('d M Y', strtotime($row['tgl_pinjam'])) ?></td>
-                        <td class="font-monospace text-danger fw-bold"><?= date('d M Y', strtotime($row['tgl_kembali_rencana'])) ?></td>
-                        <td>
+                        <td class="fw-bold text-dark px-3 text-start"><?= htmlspecialchars($row['nama_lengkap']) ?></td>
+                        <td class="font-monospace text-secondary text-center"><?= date('d M Y', strtotime($row['tgl_pinjam'])) ?></td>
+                        <td class="font-monospace text-danger fw-bold text-center"><?= date('d M Y', strtotime($row['tgl_kembali_rencana'])) ?></td>
+                        <td class="text-center">
                             <button type="button" class="btn-detail-barang tombol-detail" 
                                     data-peminjam="<?= htmlspecialchars($row['nama_lengkap']) ?>"
                                     data-barang="<?= htmlspecialchars(str_replace('||', ', ', $row['list_barang'])) ?>">
                                 🔍 Lihat Barang
                             </button>
                         </td>
-                        <td><span class="badge-waiting">Pending</span></td>
-                        <td>
+                        <td class="text-center"><span class="badge-waiting">Pending</span></td>
+                        <td class="text-center">
                             <button type="button" class="btn-verif tombol-setuju" 
                                     data-user="<?= $row['id_user'] ?>" 
                                     data-tgl="<?= $row['tgl_pinjam'] ?>"
@@ -126,7 +120,7 @@ $search = isset($_GET['search']) ? $_GET['search'] : '';
                     <?php 
                         }
                     } else {
-                        echo "<tr><td colspan='6' style='padding: 40px;' class='text-muted'><h5>Tidak ada antrean pengajuan baru untuk laboratorium ini.</h5></td></tr>";
+                        echo "<tr><td colspan='6' style='padding: 60px;' class='text-muted text-center'><h5>Tidak ada antrean pengajuan baru untuk laboratorium ini.</h5></td></tr>";
                     }
                     ?>
                 </tbody>
@@ -175,8 +169,7 @@ $search = isset($_GET['search']) ? $_GET['search'] : '';
                                         <th width="300">Tindakan Admin</th>
                                     </tr>
                                 </thead>
-                                <tbody id="container_item_verifikasi">
-                                    </tbody>
+                                <tbody id="container_item_verifikasi"></tbody>
                             </table>
                         </div>
                     </div>
@@ -246,6 +239,33 @@ $search = isset($_GET['search']) ? $_GET['search'] : '';
                 });
             });
         });
+
+        // Menangkap Hasil Response Dari admin_verifikasi_proses.php
+        const adminParams = new URLSearchParams(window.location.search);
+        const statusVerif = adminParams.get('status');
+        
+        if (statusVerif === 'sukses_verif') {
+            const namaPengawas = adminParams.get('pengawas');
+            Swal.fire({
+                title: 'Verifikasi Berhasil!',
+                text: 'Verifikasi selektif berhasil diproses oleh ' + decodeURIComponent(namaPengawas) + '!',
+                icon: 'success',
+                confirmButtonColor: '#1e6f65'
+            }).then(() => {
+                window.history.replaceState({}, document.title, window.location.pathname);
+            });
+        } else if (statusVerif === 'parsial_verif') {
+            const suksesVal = adminParams.get('sukses');
+            const gagalVal = adminParams.get('gagal');
+            Swal.fire({
+                title: 'Verifikasi Selesai',
+                text: 'Sukses: ' + suksesVal + ' item, Gagal database: ' + gagalVal + ' item.',
+                icon: 'info',
+                confirmButtonColor: '#1e6f65'
+            }).then(() => {
+                window.history.replaceState({}, document.title, window.location.pathname);
+            });
+        }
     </script>
 
     <?php include 'footer.php'; ?>
