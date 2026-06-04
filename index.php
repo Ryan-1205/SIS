@@ -40,7 +40,7 @@ session_start();
                             <img src="assets/img/logodkv.png" alt="DKV">
                         </div>
                         <div class="category-name">
-                            Aset <strong>Lab DKV</strong>
+                            Aset <strong>Lab DKV 1</strong>
                         </div>
                     </a>
                 </div>
@@ -51,7 +51,7 @@ session_start();
                             <img src="assets/img/logomm.png" alt="Multimedia">
                         </div>
                         <div class="category-name">
-                            Aset <strong>Lab Multimedia</strong>
+                            Aset <strong>Lab DKV 2</strong>
                         </div>
                     </a>
                 </div>
@@ -90,7 +90,7 @@ session_start();
                         </div>
 
                         <div class="col-6 col-md-3">
-                            <h5 class="footer-category-heading text-white fw-bold">Lab DKV</h5>
+                            <h5 class="footer-category-heading text-white fw-bold">Lab DKV 1</h5>
                             <div class="footer-scroll-list">
                                 <a href="#" class="footer-item-link">PC iMac Retina</a>
                                 <a href="#" class="footer-item-link">Wacom Tablet</a>
@@ -101,7 +101,7 @@ session_start();
                         </div>
 
                         <div class="col-6 col-md-3">
-                            <h5 class="footer-category-heading text-white fw-bold">Lab Multimedia</h5>
+                            <h5 class="footer-category-heading text-white fw-bold">Lab DKV 2</h5>
                             <div class="footer-scroll-list">
                                 <a href="#" class="footer-item-link">PC Core i7</a>
                                 <a href="#" class="footer-item-link">Kamera Sony Alpha</a>
