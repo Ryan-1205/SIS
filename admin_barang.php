@@ -92,7 +92,6 @@ $search = isset($_GET['search']) ? $_GET['search'] : '';
                     $query = "SELECT * FROM barang WHERE id_kategori = '$id_kategori_admin'";
                     if ($search != '') {
                         $search_escaped = mysqli_real_escape_string($conn, $search);
-                        // Ditambahkan kondisi pencarian kode_barang
                         $query .= " AND (kode_barang LIKE '%$search_escaped%' OR nama_barang LIKE '%$search_escaped%' OR deskripsi LIKE '%$search_escaped%' OR status LIKE '%$search_escaped%')";
                     }
                     $sql = mysqli_query($conn, $query);
@@ -102,7 +101,6 @@ $search = isset($_GET['search']) ? $_GET['search'] : '';
                             $id_barang = $row['id_barang'];
                             $kondisi = ($row['status'] == 'perbaikan') ? 'Rusak' : 'Baik';
 
-                            // Cek Status Peminjaman
                             $cek_pinjam = mysqli_query($conn, "SELECT p.tgl_pinjam, p.tgl_kembali_rencana, u.nama_lengkap, u.nis 
                                                                FROM peminjaman p 
                                                                JOIN users u ON p.id_user = u.id_user 
@@ -257,6 +255,45 @@ $search = isset($_GET['search']) ? $_GET['search'] : '';
         </div>
     </div>
 
+    <div class="modal fade" id="modalKonfirmasiHapus" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content" style="border-radius: 15px; border: none; box-shadow: 0 10px 30px rgba(0,0,0,0.15);">
+                <div class="modal-header" style="background-color: #dc3545; color: white; border-top-left-radius: 15px; border-top-right-radius: 15px; border-bottom: none;">
+                    <h5 class="modal-title fw-bold">⚠️ Konfirmasi Tindakan</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body text-center py-4">
+                    <span style="font-size: 60px;">⚠️</span>
+                    <h4 class="mt-3 fw-bold" style="color: #dc3545;">Apakah Anda Yakin?</h4>
+                    <p class="text-muted mb-0">Tindakan ini akan menghapus permanen sejumlah <strong id="totalHapusTeks" style="color: #dc3545;">0</strong> aset barang pilihan dari sistem database lab.</p>
+                </div>
+                <div class="modal-footer justify-content-center border-0 pb-4">
+                    <button type="button" class="btn btn-secondary px-4 fw-bold rounded-pill" data-bs-dismiss="modal">Batal</button>
+                    <button type="button" id="btnEksekusiHapusForm" class="btn text-white px-4 fw-bold rounded-pill" style="background-color: #dc3545;">Ya, Hapus Saja</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="modalHapusKosong" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content" style="border-radius: 15px; border: none;">
+                <div class="modal-header" style="background-color: #e67e22; color: white; border-top-left-radius: 15px; border-top-right-radius: 15px; border-bottom: none;">
+                    <h5 class="modal-title fw-bold">Pemberitahuan</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body text-center py-4">
+                    <span style="font-size: 55px;">⚠️</span>
+                    <h4 class="mt-3 fw-bold" style="color: #e67e22;">Pilihan Kosong</h4>
+                    <p class="text-muted mb-0">Silakan centang minimal satu barang terlebih dahulu sebelum menekan tombol konfirmasi hapus!</p>
+                </div>
+                <div class="modal-footer justify-content-center border-0 pb-4">
+                    <button type="button" class="btn text-white px-4 fw-bold rounded-pill" style="background-color: #e67e22;" data-bs-dismiss="modal">Mengerti</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="assets/bootstrap-5.3.8-dist/js/bootstrap.bundle.min.js"></script>
     <script>
         const tombolPeminjam = document.querySelectorAll('.tombol-peminjam');
@@ -287,7 +324,7 @@ $search = isset($_GET['search']) ? $_GET['search'] : '';
         }
 
         function simpanEditInline(id) {
-            const kodeVal   = document.getElementById('input_kode_' + id).value; // Ambil kode_barang
+            const kodeVal   = document.getElementById('input_kode_' + id).value; 
             const namaVal   = document.getElementById('input_nama_' + id).value;
             const descVal   = document.getElementById('input_desc_' + id).value;
             const statusVal = document.getElementById('input_status_' + id).value;
@@ -295,7 +332,7 @@ $search = isset($_GET['search']) ? $_GET['search'] : '';
 
             const formData = new FormData();
             formData.append("id_barang", id);
-            formData.append("kode_barang", kodeVal); // Masukkan ke form data
+            formData.append("kode_barang", kodeVal); 
             formData.append("nama_barang", namaVal);
             formData.append("deskripsi", descVal);
             formData.append("status", statusVal);
@@ -374,16 +411,27 @@ $search = isset($_GET['search']) ? $_GET['search'] : '';
             });
         });
 
-        btnBulkDelete.addEventListener('click', function() {
+        // REVISI: Mengubah Event Click Tombol Konfirmasi Hapus ke Bootstrap Modal
+        btnBulkDelete.addEventListener('click', function(e) {
+            e.preventDefault();
             const total = document.querySelectorAll('.item-checkbox:checked').length;
             if (total === 0) {
-                alert("Silakan centang minimal satu barang terlebih dahulu!");
+                var modalKosong = new bootstrap.Modal(document.getElementById('modalHapusKosong'));
+                modalKosong.show();
                 return;
             }
-            const konfirmasi = confirm("⚠️ PERINGATAN!\nApakah Anda yakin ingin menghapus secara permanen " + total + " aset barang terpilih dari database?");
-            if (konfirmasi) {
-                document.getElementById('formBulkDelete').submit();
-            }
+            
+            // Set angka jumlah yang mau dihapus di teks modal popup secara dinamis
+            document.getElementById('totalHapusTeks').innerText = total;
+            
+            // Tampilkan Modal Peringatan Custom
+            var modalPeringatan = new bootstrap.Modal(document.getElementById('modalKonfirmasiHapus'));
+            modalPeringatan.show();
+        });
+
+        // Memicu submit asli form apabila tombol "Ya, Hapus Saja" di dalam modal diklik
+        document.getElementById('btnEksekusiHapusForm').addEventListener('click', function() {
+            document.getElementById('formBulkDelete').submit();
         });
     </script>
 
