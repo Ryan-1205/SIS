@@ -1,9 +1,10 @@
 <?php
 session_start();
-include 'koneksi.php';
+// 🔥 FIX JALUR: Mundur satu folder untuk memuat konfigurasi database
+include '../koneksi.php';
 
-// Validasi akses admin
-if (!isset($_SESSION['id_user']) || $_SESSION['role'] != 'admin') {
+// Validasi akses admin (Super Admin atau Admin Lab diizinkan melakukan edit inline)
+if (!isset($_SESSION['id_user']) || strpos($_SESSION['role'], 'admin') === false) {
     echo "unauthorized";
     exit;
 }
@@ -28,14 +29,17 @@ if (isset($_POST['id_user'])) {
         
         // Buat penamaan nama file yang konsisten dan unik agar aman dibaca face-api
         $foto_nama_baru = "user_master_" . time() . "_" . $id . "." . $foto_ext;
-        $target_path = "assets/img/" . $foto_nama_baru;
+        
+        // 🔥 FIX JALUR: Mundur satu folder agar file masuk ke folder utama assets/img/
+        $target_path = "../assets/img/" . $foto_nama_baru;
 
         // Pindahkan file dari temp_name ke folder assets/img
         if (move_uploaded_file($file_foto['tmp_name'], $target_path)) {
             // Jika berhasil upload foto baru, hapus berkas fisik foto lama (kecuali gambar default)
-            if (!empty($foto_lama) && file_exists("assets/img/" . $foto_lama)) {
+            // 🔥 FIX JALUR: Tambahkan ../ pada fungsi pengecekan file_exists dan unlink
+            if (!empty($foto_lama) && file_exists("../assets/img/" . $foto_lama)) {
                 if ($foto_lama != "default_user.jpg") {
-                    unlink("assets/img/" . $foto_lama); // Hapus berkas lama biar hosting gak penuh
+                    unlink("../assets/img/" . $foto_lama); // Hapus berkas lama biar hosting gak penuh
                 }
             }
         }

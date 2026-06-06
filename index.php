@@ -15,18 +15,18 @@ session_start();
 </head>
 <body>
 
-    <?php include 'header.php'; ?>
-    <?php include 'sub_header_siswa.php'; ?>
+    <?php include 'components/header.php'; ?>
+    <?php include 'components/sub_header_siswa.php'; ?>
 
     <div class="safe-container px-3">
         <div class="category-wrapper">
-            <h2 class="category-title">KATEGORI ASET</h2>
+            <h2 class="category-title">KATEGORI ASET LABORATORIUM</h2>
             
             <div class="row g-4 justify-content-center">
                 <div class="col-md-3">
-                    <a href="list_barang.php?kat=1" class="card-category">
+                    <a href="siswa/list_barang.php?kat=1" class="card-category">
                         <div class="white-box">
-                            <img src="assets/img/logoberangkat.png" alt="Berangkat">
+                            <img src="assets/img/logoberangkat.png" alt="Logo Tim Berangkat">
                         </div>
                         <div class="category-name">
                             Aset <strong>Tim Berangkat</strong>
@@ -35,9 +35,9 @@ session_start();
                 </div>
 
                 <div class="col-md-3">
-                    <a href="list_barang.php?kat=2" class="card-category">
+                    <a href="siswa/list_barang.php?kat=2" class="card-category">
                         <div class="white-box">
-                            <img src="assets/img/logodkv.png" alt="DKV">
+                            <img src="assets/img/logodkv.png" alt="Logo DKV 1">
                         </div>
                         <div class="category-name">
                             Aset <strong>Lab DKV 1</strong>
@@ -46,9 +46,9 @@ session_start();
                 </div>
 
                 <div class="col-md-3">
-                    <a href="list_barang.php?kat=3" class="card-category">
+                    <a href="siswa/list_barang.php?kat=3" class="card-category">
                         <div class="white-box">
-                            <img src="assets/img/logodkv.png" alt="DKV">
+                            <img src="assets/img/logodkv.png" alt="Logo DKV 2">
                         </div>
                         <div class="category-name">
                             Aset <strong>Lab DKV 2</strong>
@@ -57,9 +57,9 @@ session_start();
                 </div>
 
                 <div class="col-md-3">
-                    <a href="list_barang.php?kat=4" class="card-category">
+                    <a href="siswa/list_barang.php?kat=4" class="card-category">
                         <div class="white-box">
-                            <img src="assets/img/logoanm.png" alt="Animasi">
+                            <img src="assets/img/logoanm.png" alt="Logo Animasi">
                         </div>
                         <div class="category-name">
                             Aset <strong>Lab Animasi</strong>
@@ -70,58 +70,40 @@ session_start();
         </div>
     </div>
 
-    <footer class="footer-sis mt-5 py-5">
-    <div class="safe-container px-3">
-        <h3 class="footer-main-title text-center mb-5 text-uppercase">LOKASI KAMI</h3>
-        
-        <div class="row align-items-start g-4">
-            <div class="col-lg-7">
-                <div class="info-card p-4">
-                    <div class="row">
-                        <div class="col-md-6">
-                            <h5 class="fw-bold mb-3">📍 SMKN 67 Jakarta</h5>
-                            <p class="mb-1"><strong>Alamat:</strong> Jl. Telaga No.25, RT.13/RW.9</p>
-                            <p class="mb-1">Pekayon, Kec. Ps. Rebo Kota Jakarta Timur</p>
-                            <p class="mb-1">Daerah Khusus Ibukota Jakarta, 13710</p>
-                        </div>
-
-                        <div class="col-md-6">
-                            <h5 class="fw-bold mb-3">🕒 Jam Operasional</h5>
-                            <p class="mb-1">Senin - Sabtu: 07.00 - 17.00 WIB</p>
-                            <p class="mb-1">Minggu: Tutup</p>
-                        </div>
-
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-lg-5">
-                <div class="map-responsive-wrapper">
-                    <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d1379.6901637238436!2d106.85526126212754!3d-6.346292510338262!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x2e69edd7b67bf0c9%3A0x8e78091a50d05efd!2sProfessional%20School%20State%2067%20of%20Jakarta!5e0!3m2!1sen!2sid!4v1780459272994!5m2!1sen!2sid%22" width="100%" height="100%" style="border:0;" allowfullscreen="" loading="lazy"></iframe>
-                </div>
-            </div>
-        </div>
-
-        <div class="text-center mt-5 pt-3 border-top border-secondary opacity-50 small">
-            © 2026 SIS Project. All Rights Reserved.
-        </div>
-    </div>
-</footer>
+    <?php include 'components/footer.php'; ?>
 
     <script src="assets/bootstrap-5.3.8-dist/js/bootstrap.bundle.min.js"></script>
-    
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
         const urlParams = new URLSearchParams(window.location.search);
+        
+        // 1. Notifikasi Sambutan Selamat Datang Saat Berhasil Login
         if (urlParams.get('msg') === 'welcome') {
             Swal.fire({
-                title: 'Selamat Datang!',
-                text: 'Berhasil masuk ke aplikasi Sixseven Inventory System.',
+                title: 'Otentikasi Berhasil',
+                text: 'Selamat datang kembali di sistem layanan sirkulasi inventaris Sixseven Inventory System.',
                 icon: 'success',
                 confirmButtonColor: '#1e6f65'
             }).then(() => {
                 window.history.replaceState({}, document.title, window.location.pathname);
             });
         }
+
+        // REVISI 2: Notifikasi Interaktif Sukses Keluar Sesi Sesuai Parameter Balikan logout.php
+        if (urlParams.get('status') === 'logout') {
+            Swal.fire({
+                title: 'Berhasil Keluar!',
+                text: 'Sesi Anda telah dihentikan dengan aman. Terima kasih!',
+                icon: 'success',
+                confirmButtonColor: '#1d5c56',
+                timer: 3000,
+                timerProgressBar: true
+            }).then(() => {
+                // Membersihkan parameter URL setelah alert selesai agar bersih saat di-refresh ulang
+                window.history.replaceState({}, document.title, window.location.pathname);
+            });
+        }
     </script>
+    
 </body>
 </html>

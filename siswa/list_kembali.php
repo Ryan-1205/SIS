@@ -1,10 +1,11 @@
 <?php 
 session_start();
-include 'koneksi.php';
+// PENYESUAIAN JALUR: Mundur satu folder karena file ini berada di dalam folder siswa/
+include '../koneksi.php';
 
 // Redirect jika belum login
 if (!isset($_SESSION['id_user'])) {
-    header("Location: login.php");
+    header("Location: ../login.php");
     exit;
 }
 
@@ -15,11 +16,11 @@ $id_user = $_SESSION['id_user'];
 <head>
     <meta charset="UTF-8">
     <title>Kembalikan Barang - SIS</title>
-    <link rel="stylesheet" href="assets/bootstrap-5.3.8-dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="../assets/bootstrap-5.3.8-dist/css/bootstrap.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="assets/css/style.css?v=1.4">
+    <link rel="stylesheet" href="../assets/css/style.css?v=1.4">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
-        /* Mengadopsi wrapper tabel standar SIS agar seragam */
         .admin-table-wrapper {
             max-width: 1000px;
             margin: 0 auto 50px auto;
@@ -50,8 +51,6 @@ $id_user = $_SESSION['id_user'];
         .admin-table tr:last-child td {
             border-bottom: none;
         }
-
-        /* Style Badge Kategori Lab */
         .badge-lab {
             padding: 5px 12px;
             border-radius: 15px;
@@ -62,8 +61,6 @@ $id_user = $_SESSION['id_user'];
             display: inline-block;
             white-space: nowrap;
         }
-
-        /* Merapikan visual Checkbox custom */
         .custom-check {
             width: 18px;
             height: 18px;
@@ -83,8 +80,8 @@ $id_user = $_SESSION['id_user'];
     </style>
 </head>
 <body>
-    <?php include 'header.php'; ?>
-    <?php include 'sub_header_siswa.php'; ?>
+    <?php include '../components/header.php'; ?>
+    <?php include '../components/sub_header_siswa.php'; ?>
 
     <div class="safe-container px-3 mt-5" style="margin-bottom: 150px;">
         <h4 class="fw-bold mb-3" style="color: var(--tosca-tua); max-width: 1000px; margin: 0 auto 15px auto;">
@@ -94,7 +91,6 @@ $id_user = $_SESSION['id_user'];
         <div class="admin-table-wrapper">
             <form action="proses_kembali.php" method="POST" id="formKembali">
                 <input type="hidden" name="pengawas_penerima" id="hidden_pengawas">
-                
                 <input type="hidden" name="tgl_kembali_real" id="tgl_kembali_real">
 
                 <table class="admin-table">
@@ -142,7 +138,7 @@ $id_user = $_SESSION['id_user'];
         </div>
     </div>
 
-    <div class="fixed-bottom action-footer">
+    <div class="fixed-bottom action-footer" style="background-color: var(--tosca-tua, #1e6f65); height: 70px; z-index: 1030;">
         <div class="safe-container d-flex align-items-center justify-content-between px-3 h-100">
             <div class="d-flex align-items-center gap-3 text-white fw-bold">
                 <input type="checkbox" id="checkAll" class="form-check-input custom-check-white">
@@ -162,7 +158,7 @@ $id_user = $_SESSION['id_user'];
         </div>
     </div>
 
-    <div class="modal fade" id="modalVerifKembali" tabindex="-1" aria-hidden="true">
+    <div class="modal fade" id="modalVerifKembali" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content" style="border: 2px solid var(--tosca-tua); border-radius: 20px;">
                 <div class="modal-header" style="background-color: var(--tosca-tua); border-top-left-radius: 17px; border-top-right-radius: 17px;">
@@ -184,12 +180,11 @@ $id_user = $_SESSION['id_user'];
         </div>
     </div>
 
-    <script src="assets/bootstrap-5.3.8-dist/js/bootstrap.bundle.min.js"></script>
+    <script src="../assets/bootstrap-5.3.8-dist/js/bootstrap.bundle.min.js"></script>
     <script>
         const checkAll = document.getElementById('checkAll');
         const modalVerifBS = new bootstrap.Modal(document.getElementById('modalVerifKembali'));
 
-        // Logika check/uncheck seluruh checkbox sekaligus
         if (checkAll) {
             checkAll.addEventListener('change', function() {
                 const itemCheckboxes = document.querySelectorAll('.item-checkbox');
@@ -199,55 +194,64 @@ $id_user = $_SESSION['id_user'];
             });
         }
 
-        // Fungsi saat tombol "Kembalikan Sekarang" di footer diklik
         function pemicuModalKembali() {
-            // Validasi: Hitung berapa item yang diberi centang oleh user secara real-time
             const totalDicentang = document.querySelectorAll('input[name="pinjam_pilihan[]"]:checked').length;
-            
-            console.log("Jumlah barang yang dicentang: " + totalDicentang);
 
             if (totalDicentang === 0) {
-                alert('⚠️ Silakan pilih minimal satu barang yang ingin dikembalikan!');
+                Swal.fire({
+                    title: '⚠️ Pilihan Kosong',
+                    text: 'Silakan pilih minimal satu barang yang ingin dikembalikan!',
+                    icon: 'warning',
+                    confirmButtonColor: '#1e6f65'
+                });
                 return; 
             }
 
-            // Jika lolos validasi, reset form input nama pengawas lalu buka modal popup
             document.getElementById('pengawas_penerima').value = '';
             modalVerifBS.show();
         }
 
-        // Fungsi final saat tombol "Konfirmasi & Serahkan" di dalam modal diklik
         function eksekusiFormKembali() {
             const namaPengawas = document.getElementById('pengawas_penerima').value.trim();
             
             if (namaPengawas === "") {
-                alert("❌ Nama pengawas tidak boleh kosong! Mohon konfirmasikan dengan penjaga lab.");
+                Swal.fire({
+                    title: '❌ Input Kosong',
+                    text: 'Nama pengawas tidak boleh kosong! Mohon konfirmasikan dengan penjaga lab.',
+                    icon: 'error',
+                    confirmButtonColor: '#1e6f65'
+                });
                 return;
             }
 
-            // 1. Amankan nama pengawas ke input hidden utama
             document.getElementById('hidden_pengawas').value = namaPengawas;
 
-            // 2. OTOMATISASI TANGGAL DEVICE: Tangkap waktu internal laptop/HP user saat ini juga
+            // OPTIMASI AKTUAL WAKTU: Menangkap data Tanggal sekaligus Jam, Menit, Detik dari Device secara riil
             const dateDevice = new Date();
             const year = dateDevice.getFullYear();
-            const month = String(dateDevice.getMonth() + 1).padStart(2, '0'); // Ditambah 1 karena index bulan JS mulai dari 0
+            const month = String(dateDevice.getMonth() + 1).padStart(2, '0'); 
             const day = String(dateDevice.getDate()).padStart(2, '0');
+            const hours = String(dateDevice.getHours()).padStart(2, '0');
+            const minutes = String(dateDevice.getMinutes()).padStart(2, '0');
+            const seconds = String(dateDevice.getSeconds()).padStart(2, '0');
             
-            const formatTanggalMySQL = `${year}-${month}-${day}`;
+            // Output berformat standardisasi DATETIME MySQL: YYYY-MM-DD HH:MM:SS
+            const formatTanggalMySQL = `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
             
-            // 3. Amankan hasil konversi tanggal kalender device ke input hidden tgl_kembali_real
             document.getElementById('tgl_kembali_real').value = formatTanggalMySQL;
-
-            // 4. Eksekusi kirim data ke file proses_kembali.php
             document.getElementById('formKembali').submit();
         }
 
-        // Cek parameter error URL bawaan sistem
         const urlParams = new URLSearchParams(window.location.search);
         if (urlParams.get('status') === 'gagal_pilih') {
-            alert('⚠️ Gagal memproses! Silakan pilih minimal satu barang yang ingin dikembalikan!');    
+            Swal.fire({
+                title: '⚠️ Gagal Memproses',
+                text: 'Silakan pilih minimal satu barang yang ingin dikembalikan!',
+                icon: 'warning',
+                confirmButtonColor: '#1e6f65'
+            });
         }
     </script>
+    <?php include '../components/footer.php'; ?>
 </body>
 </html>

@@ -1,10 +1,12 @@
 <?php
 session_start();
-include 'koneksi.php';
+// REVISI JALUR: Mundur satu folder karena file ini sekarang berada di dalam subfolder siswa/
+include '../koneksi.php';
 
 // Cek apakah ada ID barang yang dikirim
 if (isset($_GET['id'])) {
-    $id_barang = $_GET['id'];
+    // Amankan parameter ID barang dari ancaman SQL Injection
+    $id_barang = mysqli_real_escape_string($conn, $_GET['id']);
 
     // Jika belum ada session keranjang, buat array kosong
     if (!isset($_SESSION['keranjang'])) {
@@ -15,16 +17,17 @@ if (isset($_GET['id'])) {
     if (!in_array($id_barang, $_SESSION['keranjang'])) {
         array_push($_SESSION['keranjang'], $id_barang);
         
-        // Redirect dengan status SUKSES karena barang baru masuk
+        // REVISI JALUR: Langsung ke filenya karena sudah satu direktori di dalam folder siswa/
         header("Location: list_pinjam.php?status=sukses");
         exit();
     } else {
-        // Redirect dengan status ADA karena barangnya duplikat (sudah dipilih sebelumnya)
+        // REVISI JALUR: Langsung ke filenya karena sudah satu direktori di dalam folder siswa/
         header("Location: list_pinjam.php?status=ada");
         exit();
     }
 } else {
-    header("Location: index.php");
+    // REVISI JALUR: Mundur satu folder untuk kembali ke halaman landing utama root
+    header("Location: ../index.php");
     exit();
 }
 ?>

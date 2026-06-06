@@ -9,7 +9,8 @@ $search = isset($_GET['search']) ? $_GET['search'] : '';
         <a href="admin_user.php" class="admin-tab <?= ($current_page_admin == 'admin_user.php') ? 'active' : ''; ?>">Data User</a>
         <a href="admin_barang.php" class="admin-tab <?= ($current_page_admin == 'admin_barang.php') ? 'active' : ''; ?>">Data Barang</a>
         <a href="admin_peminjam.php" class="admin-tab <?= ($current_page_admin == 'admin_peminjam.php') ? 'active' : ''; ?>">Data Peminjam</a>
-        <a href="admin_verifikasi.php" class="admin-tab <?= ($current_page_admin == 'admin_verifikasi.php') ? 'active' : ''; ?>">Verifikasi Peminjaman</a>
+        <a href="admin_verifikasi_peminjaman.php" class="admin-tab <?= ($current_page_admin == 'admin_verifikasi_peminjaman.php') ? 'active' : ''; ?>">Verifikasi Peminjaman</a>
+        <a href="admin_verifikasi_pengembalian.php" class="admin-tab <?= ($current_page_admin == 'admin_verifikasi_pengembalian.php') ? 'active' : ''; ?>">Verifikasi Pengembalian</a>
     </div>
 </div>
 
@@ -21,7 +22,7 @@ $search = isset($_GET['search']) ? $_GET['search'] : '';
         justify-content: center;
         gap: 12px; /* Jarak antar tombol */
         margin: 20px auto;
-        max-width: 1000px;
+        max-width: 1100px; /* Diperlebar sedikit agar muat 5 tombol sejajar tanpa merusak layout */
         padding: 0 15px;
     }
 
@@ -51,6 +52,6 @@ $search = isset($_GET['search']) ? $_GET['search'] : '';
         color: #ffffff !important; /* Warna text berubah jadi putih */
         background-color: #1a5f57 !important; /* Background terisi penuh hijau tosca tua */
         box-shadow: 0 4px 12px rgba(26, 95, 87, 0.2); /* Efek bayangan halus */
-        pointer-events: none; /* Opsional: Mematikan klik jika admin sudah berada di halaman tersebut */
+        pointer-events: none; /* Mematikan klik jika admin sudah berada di halaman tersebut */
     }
 </style>

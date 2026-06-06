@@ -1,18 +1,18 @@
 <?php
 session_start();
-include 'koneksi.php';
+// Penyesuaian Jalur: Mundur satu folder untuk memuat konfigurasi database
+include '../koneksi.php';
 
-// Validasi akses admin
-if (!isset($_SESSION['id_user']) || $_SESSION['role'] != 'admin') {
-    header("Location: login.php");
+// Validasi hak akses admin berdasarkan awalan kata 'admin_' pada role session
+if (!isset($_SESSION['id_user']) || strpos($_SESSION['role'], 'admin_') === false) {
+    header("Location: ../login.php");
     exit;
 }
 
-// Inisialisasi status data untuk pemanggilan modal popup
 $status_hapus = '';
 $jumlah_sukses = 0;
 
-// Memastikan ada data barang yang dikirim lewat checkbox
+// Memastikan ada data barang yang dikirim melalui checkbox form
 if (isset($_POST['id_barang_pilihan']) && is_array($_POST['id_barang_pilihan'])) {
     $id_barang_array = $_POST['id_barang_pilihan'];
     
@@ -22,14 +22,22 @@ if (isset($_POST['id_barang_pilihan']) && is_array($_POST['id_barang_pilihan']))
     foreach ($id_barang_array as $id_barang) {
         $id_barang = mysqli_real_escape_string($conn, $id_barang);
 
-        // JAGA-JAGA OPTIONAL: Hapus file fisik foto lama di folder img jika ada biar server ga penuh sampah
+        // Memeriksa nama file foto di database sebelum data dihapus
         $query_foto = mysqli_query($conn, "SELECT foto FROM barang WHERE id_barang = '$id_barang'");
         $data_foto = mysqli_fetch_assoc($query_foto);
-        if (!empty($data_foto['foto']) && file_exists("assets/img/" . $data_foto['foto'])) {
-            unlink("assets/img/" . $data_foto['foto']); // Hapus file foto fisik
+        
+        if ($data_foto && !empty($data_foto['foto'])) {
+            $nama_foto = $data_foto['foto'];
+            // Penyesuaian Jalur: Memeriksa dan menghapus file foto fisik dari folder yang tepat
+            if (file_exists("../assets/img/" . $nama_foto)) {
+                // Proteksi gambar logo bawaan sistem agar tidak ikut terhapus
+                if (!in_array($nama_foto, ["logoberangkat.png", "logodkv.png", "logomm.png", "logoanm.png"])) {
+                    unlink("../assets/img/" . $nama_foto);
+                }
+            }
         }
 
-        // Eksekusi hapus baris record dari database
+        // Eksekusi penghapusan data dari database
         $query_delete = "DELETE FROM barang WHERE id_barang = '$id_barang'";
         if (mysqli_query($conn, $query_delete)) {
             $sukses++;
@@ -51,7 +59,7 @@ if (isset($_POST['id_barang_pilihan']) && is_array($_POST['id_barang_pilihan']))
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Proses Penghapusan Aset</title>
-    <link rel="stylesheet" href="assets/bootstrap-5.3.8-dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="../assets/bootstrap-5.3.8-dist/css/bootstrap.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
         body { font-family: 'Poppins', sans-serif; background-color: #f8f9fa; }
@@ -70,15 +78,14 @@ if (isset($_POST['id_barang_pilihan']) && is_array($_POST['id_barang_pilihan']))
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title fw-bold">🗑️ Pemberitahuan Sistem</h5>
+                    <h5 class="modal-title fw-bold">Notifikasi Sistem</h5>
                 </div>
                 <div class="modal-body text-center py-4">
-                    <span style="font-size: 60px;">🗑️</span>
-                    <h4 class="mt-3 fw-bold" style="color: #dc3545;">Penghapusan Selesai</h4>
-                    <p class="text-muted mb-0">Berhasil membersihkan sebanyak <strong><?= $jumlah_sukses; ?></strong> data aset barang dari database.</p>
+                    <h4 class="mt-3 fw-bold" style="color: #dc3545;">Penghapusan Berhasil</h4>
+                    <p class="text-muted mb-0">Sistem berhasil menghapus sebanyak <strong><?= $jumlah_sukses; ?></strong> data aset barang dari database.</p>
                 </div>
                 <div class="modal-footer justify-content-center border-0 pb-4">
-                    <a href="admin_barang.php" class="btn btn-danger-custom text-decoration-none">OK</a>
+                    <a href="admin_barang.php" class="btn btn-danger-custom text-decoration-none">Selesai</a>
                 </div>
             </div>
         </div>
@@ -89,12 +96,11 @@ if (isset($_POST['id_barang_pilihan']) && is_array($_POST['id_barang_pilihan']))
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header" style="background-color: #e67e22;">
-                    <h5 class="modal-title fw-bold">⚠️ Data Tidak Ditemukan</h5>
+                    <h5 class="modal-title fw-bold">Pemberitahuan Sistem</h5>
                 </div>
                 <div class="modal-body text-center py-4">
-                    <span style="font-size: 60px;">⚠️</span>
-                    <h4 class="mt-3 fw-bold" style="color: #e67e22;">Aksi Ditolak!</h4>
-                    <p class="text-muted mb-0">Tidak ada parameter aset barang yang dipilih untuk dilakukan penghapusan.</p>
+                    <h4 class="mt-3 fw-bold" style="color: #e67e22;">Tindakan Ditolak</h4>
+                    <p class="text-muted mb-0">Tidak ada parameter data aset barang yang dipilih untuk dilakukan proses penghapusan.</p>
                 </div>
                 <div class="modal-footer justify-content-center border-0 pb-4">
                     <a href="admin_barang.php" class="btn btn-warning-custom text-decoration-none">Kembali</a>
@@ -104,7 +110,7 @@ if (isset($_POST['id_barang_pilihan']) && is_array($_POST['id_barang_pilihan']))
     </div>
     <?php endif; ?>
 
-    <script src="assets/bootstrap-5.3.8-dist/js/bootstrap.bundle.min.js"></script>
+    <script src="../assets/bootstrap-5.3.8-dist/js/bootstrap.bundle.min.js"></script>
     <script>
         document.addEventListener("DOMContentLoaded", function() {
             var modalElemen = document.getElementById('hasilHapusModal');

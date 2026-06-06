@@ -2,6 +2,8 @@
 session_start();
 include 'koneksi.php';
 
+$status_proses = '';
+
 // ================= UTILITY HELPER: FUNGSI KOMPRESI BASE64 KE JPG =================
 function dekodeKompresDanSimpan($base64_string, $target_path, $max_width = 800, $quality = 75) {
     if (!function_exists('imagecreatefromstring')) {
@@ -35,17 +37,17 @@ function dekodeKompresDanSimpan($base64_string, $target_path, $max_width = 800, 
 }
 // =================================================================================
 
-if(isset($_POST['daftar'])) {
+if (isset($_POST['daftar'])) {
     $nama = mysqli_real_escape_string($conn, $_POST['nama']);
     $nis = mysqli_real_escape_string($conn, $_POST['nis']); 
     $snapshot_wajah = isset($_POST['snapshot_wajah']) ? $_POST['snapshot_wajah'] : '';
 
     $cek_user = mysqli_query($conn, "SELECT * FROM users WHERE nis = '$nis'");
     
-    if(mysqli_num_rows($cek_user) > 0) {
-        $error = "NIS sudah terdaftar! Silakan langsung masuk.";
+    if (mysqli_num_rows($cek_user) > 0) {
+        $error = "Nomor Induk Siswa (NIS) sudah terdaftar dalam sistem.";
     } elseif (empty($snapshot_wajah)) {
-        $error = "Gagal mendaftar! Anda belum melakukan verifikasi potret kamera.";
+        $error = "Gagal mendaftar. Anda belum melakukan verifikasi potret kamera.";
     } else {
         $nama_file_final = "user_" . $nis . "_" . time() . ".jpg";
         $target_folder   = "assets/img/" . $nama_file_final;
@@ -53,17 +55,16 @@ if(isset($_POST['daftar'])) {
         $proses_kompres = dekodeKompresDanSimpan($snapshot_wajah, $target_folder, 800, 75);
 
         if ($proses_kompres === "GD_ERROR") {
-            $error = "⚠️ ERROR SERVER: Ekstensi GD Library belum aktif di XAMPP Anda! Silakan aktifkan 'extension=gd' di file php.ini lalu restart Apache.";
+            $error = "SISTEM ERROR: Ekstensi GD Library belum aktif di XAMPP Anda. Silakan aktifkan 'extension=gd' di file php.ini lalu restart Apache.";
         } elseif ($proses_kompres) {
             $query = "INSERT INTO users (nis, nama_lengkap, role, foto_resmi) 
                       VALUES ('$nis', '$nama', 'siswa', '$nama_file_final')";
             
-            if(mysqli_query($conn, $query)) {
-                echo "<script>alert('Pendaftaran berhasil! Silakan masuk.'); window.location.href='login.php';</script>";
-                exit;
+            if (mysqli_query($conn, $query)) {
+                $status_proses = 'sukses';
             } else {
                 if (file_exists($target_folder)) unlink($target_folder);
-                $error = "Terjadi kesalahan saat menyimpan data ke database.";
+                $error = "Terjadi kesalahan teknis saat menyimpan data pendaftaran.";
             }
         } else {
             $error = "Sistem gagal mengolah data biner tangkapan kamera wajah.";
@@ -91,10 +92,14 @@ if(isset($_POST['daftar'])) {
             border: 2px solid var(--tosca-tua) !important;
             outline: none;
         }
+        .modal-content { border-radius: 15px; border: none; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
+        .modal-header { background-color: #1d5c56; color: white; border-top-left-radius: 15px; border-top-right-radius: 15px; border-bottom: none; }
+        .btn-tosca { background-color: #1d5c56; color: white; border-radius: 8px; font-weight: 600; padding: 10px 30px; border: none; }
+        .btn-tosca:hover { opacity: 0.9; color: white; }
     </style>
 </head>
 <body>
-    <?php include 'header.php'; ?>
+    <?php include 'components/header.php'; ?>
 
     <form action="" method="POST" id="formRegister" onsubmit="return jalankanProteksiKirim();">
 
@@ -102,8 +107,8 @@ if(isset($_POST['daftar'])) {
             <div class="login-card shadow-sm" style="background-color: var(--tosca-muda); border-radius: 15px; padding: 40px 50px; width: 100%; max-width: 400px; text-align: center;">
                 <h2 style="color: var(--tosca-tua); font-weight: 800; font-size: 28px; margin-bottom: 30px;">Daftar</h2>
                 
-                <?php if(isset($error)): ?>
-                    <div class="alert alert-danger py-2" style="font-size: 14px;"><?= $error ?></div>
+                <?php if (isset($error)): ?>
+                    <div class="alert alert-danger py-2 text-start small" role="alert"><?= $error ?></div>
                 <?php endif; ?>
 
                 <input type="text" name="nama" id="reg_nama" class="login-input" placeholder="Nama Lengkap" value="<?= isset($_POST['nama']) ? htmlspecialchars($_POST['nama']) : '' ?>" required style="border-radius: 10px; padding: 12px 20px; margin-bottom: 20px; width: 100%;">
@@ -148,6 +153,25 @@ if(isset($_POST['daftar'])) {
 
     </form>
 
+    <?php if ($status_proses == 'sukses') : ?>
+    <div class="modal fade" id="registrasiModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold">Notifikasi Sistem</h5>
+                </div>
+                <div class="modal-body text-center py-4">
+                    <h4 class="mt-3 fw-bold" style="color: #1d5c56;">Pendaftaran Berhasil</h4>
+                    <p class="text-muted mb-0">Akun siswa Anda telah sukses dibuat menggunakan validasi biometrik. Silakan masuk menggunakan NIS Anda.</p>
+                </div>
+                <div class="modal-footer justify-content-center border-0 pb-4">
+                    <a href="login.php" class="btn btn-tosca text-decoration-none">Selesai</a>
+                </div>
+            </div>
+        </div>
+    </div>
+    <?php endif; ?>
+
     <script src="assets/bootstrap-5.3.8-dist/js/bootstrap.bundle.min.js"></script>
     <script src="assets/js/face-api.min.js"></script>
 
@@ -155,6 +179,15 @@ if(isset($_POST['daftar'])) {
         const modalKameraBS = new bootstrap.Modal(document.getElementById('modalKameraDaftar'));
         let streamWebcam = null;
         let intervalScan = null;
+
+        // Trigger kemunculan modal konfirmasi registrasi sukses formal
+        document.addEventListener("DOMContentLoaded", function() {
+            var modalElemen = document.getElementById('registrasiModal');
+            if (modalElemen) {
+                var pemicuModal = new bootstrap.Modal(modalElemen);
+                pemicuModal.show();
+            }
+        });
 
         function validasiTeksDanBukaKamera() {
             const nama = document.getElementById('reg_nama').value.trim();

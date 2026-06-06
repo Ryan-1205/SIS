@@ -3,21 +3,62 @@ session_start();
 // Penyesuaian Jalur: Mundur satu folder untuk memuat konfigurasi database
 include '../koneksi.php';
 
-// Validasi hak akses admin berdasarkan awalan kata 'admin_' pada role session
-if (!isset($_SESSION['id_user']) || strpos($_SESSION['role'], 'admin_') === false) {
+// Validasi hak akses admin
+if (!isset($_SESSION['id_user']) || strpos($_SESSION['role'], 'admin') === false) {
     header("Location: ../login.php");
     exit;
 }
 
-// Mengambil ID Kategori hasil pemetaan otomatis saat login
+$current_admin_role = $_SESSION['role'];
 $id_kategori_admin = isset($_SESSION['id_kategori']) ? $_SESSION['id_kategori'] : 1;
+
+// 🔥 PARAMETER FILTER KATEGORI BARU (Khusus Super Admin)
+// Jika admin biasa, otomatis pakai id_kategori dari session-nya
+$filter_kategori = isset($_GET['filter_kat']) ? $_GET['filter_kat'] : 'all';
 
 // Memuat nama kategori laboratorium secara dinamis
 $query_nama_lab = mysqli_query($conn, "SELECT nama_kategori FROM kategori WHERE id_kategori = '$id_kategori_admin'");
 $data_lab = mysqli_fetch_array($query_nama_lab);
-$nama_lab_tampil = $data_lab ? $data_lab['nama_kategori'] : "Laboratorium";
+
+if ($current_admin_role === 'admin') {
+    $nama_lab_tampil = "Semua Laboratorium (Global)";
+} else {
+    $nama_lab_tampil = $data_lab ? $data_lab['nama_kategori'] : "Laboratorium";
+}
 
 $search = isset($_GET['search']) ? $_GET['search'] : '';
+
+// LOGIKA DROPDOWN LIMIT (10, 25, 50)
+$limit = isset($_GET['limit']) ? (int)$_GET['limit'] : 10;
+if (!in_array($limit, [10, 25, 50])) {
+    $limit = 10; 
+}
+
+// LOGIKA HALAMAN AKTIF (PAGINATION)
+$halaman = isset($_GET['halaman']) ? (int)$_GET['halaman'] : 1;
+if ($halaman < 1) { $halaman = 1; }
+$offset = ($halaman - 1) * $limit;
+
+// 🔥 LOGIKA COUNT BARU: Menyesuaikan dengan Filter Kategori Dropdown Super Admin
+if ($current_admin_role === 'admin') {
+    if ($filter_kategori !== 'all') {
+        $fk_escaped = mysqli_real_escape_string($conn, $filter_kategori);
+        $query_hitung = "SELECT COUNT(*) as total FROM barang WHERE id_kategori = '$fk_escaped'";
+    } else {
+        $query_hitung = "SELECT COUNT(*) as total FROM barang WHERE 1=1";
+    }
+} else {
+    $query_hitung = "SELECT COUNT(*) as total FROM barang WHERE id_kategori = '$id_kategori_admin'";
+}
+
+if ($search != '') {
+    $search_escaped = mysqli_real_escape_string($conn, $search);
+    $query_hitung .= " AND (kode_barang LIKE '%$search_escaped%' OR nama_barang LIKE '%$search_escaped%' OR deskripsi LIKE '%$search_escaped%' OR status LIKE '%$search_escaped%')";
+}
+$sql_hitung = mysqli_query($conn, $query_hitung);
+$data_hitung = mysqli_fetch_assoc($sql_hitung);
+$total_data = $data_hitung['total'];
+$total_halaman = ceil($total_data / $limit);
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -28,7 +69,7 @@ $search = isset($_GET['search']) ? $_GET['search'] : '';
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="../assets/css/style.css?v=2.5">
     <style>
-        .admin-search-container { max-width: 1000px; margin: 30px auto; }
+        .admin-search-container { max-width: 1000px; margin: 30px auto 15px auto; }
         .admin-search-form { display: flex; border: 2px solid var(--tosca-tua); border-radius: 50px; padding: 4px; background: white; }
         .admin-search-form input { flex-grow: 1; border: none; padding: 10px 25px; outline: none; color: var(--tosca-tua); font-size: 16px; background: transparent; }
         .admin-search-form button { background-color: var(--tosca-tua); color: white; border: none; padding: 8px 50px; border-radius: 50px; font-weight: 700; font-size: 18px; cursor: pointer; }
@@ -45,9 +86,13 @@ $search = isset($_GET['search']) ? $_GET['search'] : '';
         .badge-tersedia { background-color: #28a745; color: white; padding: 6px 16px; border-radius: 50px; font-size: 13px; font-weight: 600; white-space: nowrap; display: inline-block; }
         .badge-dipinjam { background-color: #e67e22; color: white; padding: 6px 16px; border-radius: 50px; font-size: 13px; font-weight: 600; white-space: nowrap; display: inline-block; cursor: pointer; text-decoration: none; }
         .badge-perbaikan { background-color: #dc3545; color: white; padding: 6px 16px; border-radius: 50px; font-size: 13px; font-weight: 600; white-space: nowrap; display: inline-block; }
+        .badge-kat-lab { background-color: #e2f1ee; color: var(--tosca-tua); border: 1px solid var(--tosca-muda); padding: 5px 12px; border-radius: 50px; font-size: 13px; font-weight: 600; }
         
         .inline-input { width: 100%; padding: 6px 12px; border: 2px solid var(--tosca-tua); border-radius: 8px; font-size: 15px; outline: none; }
         .inline-select { width: 100%; padding: 6px 12px; border: 2px solid var(--tosca-tua); border-radius: 8px; font-size: 15px; background: white; cursor: pointer; }
+
+        .pagination .page-link { color: var(--tosca-tua); border-color: var(--tosca-muda); }
+        .pagination .page-item.active .page-link { background-color: var(--tosca-tua); border-color: var(--tosca-tua); color: white; }
     </style>
 </head>
 <body>
@@ -72,9 +117,39 @@ $search = isset($_GET['search']) ? $_GET['search'] : '';
         
         <div class="admin-search-container">
             <form action="" method="GET" class="admin-search-form">
+                <input type="hidden" name="limit" value="<?= $limit ?>">
+                <input type="hidden" name="filter_kat" value="<?= $filter_kategori ?>">
                 <input type="text" name="search" placeholder="Cari Kode Barang, Nama, atau Deskripsi..." value="<?= htmlspecialchars($search) ?>">
                 <button type="submit">Cari</button>
             </form>
+        </div>
+
+        <div class="mx-auto mb-2 d-flex justify-content-end align-items-center gap-3" style="max-width: 1000px;">
+            
+            <?php if ($current_admin_role === 'admin'): ?>
+            <div class="d-flex align-items-center gap-2">
+                <span class="text-muted small fw-semibold">Kategori Lab:</span>
+                <select class="form-select form-select-sm" id="filterKategori" style="width: 160px; border: 2px solid var(--tosca-tua); border-radius: 8px; font-weight: 600; color: var(--tosca-tua);">
+                    <option value="all" <?= $filter_kategori == 'all' ? 'selected' : ''; ?>>Semua Lab</option>
+                    <?php 
+                    $list_kategori_query = mysqli_query($conn, "SELECT * FROM kategori");
+                    while($kat_row = mysqli_fetch_assoc($list_kategori_query)) {
+                        $selected = ($filter_kategori == $kat_row['id_kategori']) ? 'selected' : '';
+                        echo "<option value='".$kat_row['id_kategori']."' $selected>".$kat_row['nama_kategori']."</option>";
+                    }
+                    ?>
+                </select>
+            </div>
+            <?php endif; ?>
+
+            <div class="d-flex align-items-center gap-2">
+                <span class="text-muted small fw-semibold">Tampilkan:</span>
+                <select class="form-select form-select-sm" id="changeLimit" style="width: 80px; border: 2px solid var(--tosca-tua); border-radius: 8px; font-weight: 600;">
+                    <option value="10" <?= $limit == 10 ? 'selected' : ''; ?>>10</option>
+                    <option value="25" <?= $limit == 25 ? 'selected' : ''; ?>>25</option>
+                    <option value="50" <?= $limit == 50 ? 'selected' : ''; ?>>50</option>
+                </select>
+            </div>
         </div>
 
         <div class="admin-table-wrapper">
@@ -83,21 +158,38 @@ $search = isset($_GET['search']) ? $_GET['search'] : '';
                 <thead>
                     <tr>
                         <th width="50" class="col-select-master"><input type="checkbox" id="selectAll" class="form-check-input select-all-check"></th>
-                        <th width="160">KODE BARANG (INV)</th> <th>NAMA BARANG</th>
+                        <th width="150">KODE BARANG (INV)</th> 
+                        <th>NAMA BARANG</th>
+                        <?php if ($current_admin_role === 'admin'): ?>
+                            <th width="140">KATEGORI LAB</th>
+                        <?php endif; ?>
                         <th>DESKRIPSI</th>
-                        <th width="140">KONDISI</th>
-                        <th width="140">STATUS</th>
+                        <th width="130">KONDISI</th>
+                        <th width="130">STATUS</th>
                         <th width="90">FOTO</th>
-                        <th width="150">AKSI</th>
+                        <th width="140">AKSI</th>
                     </tr>
                 </thead>
                 <tbody>
                     <?php 
-                    $query = "SELECT * FROM barang WHERE id_kategori = '$id_kategori_admin'";
+                    // 🔥 LOGIKA DATA QUERY: Menyaring berdasarkan seleksi dropdown kategori super admin
+                    if ($current_admin_role === 'admin') {
+                        if ($filter_kategori !== 'all') {
+                            $fk_escaped = mysqli_real_escape_string($conn, $filter_kategori);
+                            $query = "SELECT barang.*, kategori.nama_kategori FROM barang JOIN kategori ON barang.id_kategori = kategori.id_kategori WHERE barang.id_kategori = '$fk_escaped'";
+                        } else {
+                            $query = "SELECT barang.*, kategori.nama_kategori FROM barang JOIN kategori ON barang.id_kategori = kategori.id_kategori WHERE 1=1";
+                        }
+                    } else {
+                        $query = "SELECT * FROM barang WHERE id_kategori = '$id_kategori_admin'";
+                    }
+
                     if ($search != '') {
                         $search_escaped = mysqli_real_escape_string($conn, $search);
-                        $query .= " AND (kode_barang LIKE '%$search_escaped%' OR nama_barang LIKE '%$search_escaped%' OR deskripsi LIKE '%$search_escaped%' OR status LIKE '%$search_escaped%')";
+                        $query .= " AND (barang.kode_barang LIKE '%$search_escaped%' OR barang.nama_barang LIKE '%$search_escaped%' OR barang.deskripsi LIKE '%$search_escaped%' OR barang.status LIKE '%$search_escaped%')";
                     }
+                    
+                    $query .= " LIMIT $limit OFFSET $offset";
                     $sql = mysqli_query($conn, $query);
 
                     if (mysqli_num_rows($sql) > 0) {
@@ -129,11 +221,10 @@ $search = isset($_GET['search']) ? $_GET['search'] : '';
                                 }
                             }
 
-                            // Penyesuaian Jalur Foto: Membaca direktori aset di luar folder admin
                             if (!empty($row['foto']) && file_exists("../assets/img/" . $row['foto'])) {
                                 $gambar_tampil = "../assets/img/" . $row['foto'];
                             } else {
-                                switch ($id_kategori_admin) {
+                                switch ($row['id_kategori']) {
                                     case 1: $gambar_tampil = "../assets/img/logoberangkat.png"; break;
                                     case 2: $gambar_tampil = "../assets/img/logodkv.png"; break;
                                     case 3: $gambar_tampil = "../assets/img/logomm.png"; break;
@@ -156,6 +247,13 @@ $search = isset($_GET['search']) ? $_GET['search'] : '';
                             <span class="view-mode fw-bold text-dark"><?= htmlspecialchars($row['nama_barang']) ?></span>
                             <input type="text" class="form-control inline-input edit-mode d-none" id="input_nama_<?= $id_barang; ?>" value="<?= htmlspecialchars($row['nama_barang']) ?>">
                         </td>
+
+                        <?php if ($current_admin_role === 'admin'): ?>
+                        <td>
+                            <span class="badge-kat-lab"><?= htmlspecialchars($row['nama_kategori']) ?></span>
+                        </td>
+                        <?php endif; ?>
+
                         <td>
                             <span class="view-mode text-muted"><?= htmlspecialchars($row['deskripsi']) ?></span>
                             <input type="text" class="form-control inline-input edit-mode d-none" id="input_desc_<?= $id_barang; ?>" value="<?= htmlspecialchars($row['deskripsi']) ?>">
@@ -183,13 +281,40 @@ $search = isset($_GET['search']) ? $_GET['search'] : '';
                     <?php 
                         }
                     } else {
-                        echo "<tr><td colspan='8' style='padding: 40px;' class='text-muted'><h5>Tidak ditemukan data aset pada laboratorium ini.</h5></td></tr>";
+                        echo "<tr><td colspan='".($current_admin_role === 'admin' ? '9' : '8')."' style='padding: 40px;' class='text-muted'><h5>Tidak ditemukan data aset pada filter ini.</h5></td></tr>";
                     }
                     ?>
                 </tbody>
             </table>
             </form>
         </div>
+
+        <?php if ($total_halaman > 1): ?>
+        <div class="d-flex justify-content-center mt-4">
+            <nav>
+                <ul class="pagination pagination-md shadow-sm rounded-pill overflow-hidden">
+                    <li class="page-item <?= $halaman <= 1 ? 'disabled' : ''; ?>">
+                        <a class="page-link px-3" href="?halaman=<?= $halaman - 1; ?>&limit=<?= $limit; ?>&filter_kat=<?= $filter_kategori; ?>&search=<?= urlencode($search) ?>" aria-label="Previous">
+                            <span>&laquo; Prev</span>
+                        </a>
+                    </li>
+                    <?php for ($i = 1; $i <= $total_halaman; $i++): ?>
+                        <li class="page-item <?= $halaman == $i ? 'active' : ''; ?>">
+                            <a class="page-link px-3" href="?halaman=<?= $i; ?>&limit=<?= $limit; ?>&filter_kat=<?= $filter_kategori; ?>&search=<?= urlencode($search) ?>"><?= $i; ?></a>
+                        </li>
+                    <?php endfor; ?>
+                    <li class="page-item <?= $halaman >= $total_halaman ? 'disabled' : ''; ?>">
+                        <a class="page-link px-3" href="?halaman=<?= $halaman + 1; ?>&limit=<?= $limit; ?>&filter_kat=<?= $filter_kategori; ?>&search=<?= urlencode($search) ?>" aria-label="Next">
+                            <span>Next &raquo;</span>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+        </div>
+        <div class="text-center text-muted small mt-1">
+            Menampilkan data ke-<?= $offset + 1; ?> sampai <?= min($offset + $limit, $total_data); ?> dari total <?= $total_data; ?> aset barang.
+        </div>
+        <?php endif; ?>
     </div>
 
     <div class="modal fade" id="modalTambahBarang" tabindex="-1" aria-hidden="true">
@@ -201,7 +326,7 @@ $search = isset($_GET['search']) ? $_GET['search'] : '';
                 </div>
                 <form action="admin_barang_tambah_proses.php" method="POST" enctype="multipart/form-data">
                     <div class="modal-body p-4">
-                        <input type="hidden" name="id_kategori" value="<?= $id_kategori_admin; ?>">
+                        <input type="hidden" name="id_kategori" value="<?= ($id_kategori_admin == 0) ? 1 : $id_kategori_admin; ?>">
                         
                         <div class="mb-3">
                             <label class="form-label fw-bold" style="color: var(--tosca-tua);">Kode Inventaris :</label>
@@ -299,6 +424,23 @@ $search = isset($_GET['search']) ? $_GET['search'] : '';
 
     <script src="../assets/bootstrap-5.3.8-dist/js/bootstrap.bundle.min.js"></script>
     <script>
+        // JAVASCRIPT REDIRECT AUTO-SINKRON LIMIT DAN FILTER KATEGORI BARU
+        const changeLimit = document.getElementById('changeLimit');
+        const filterKategori = document.getElementById('filterKategori');
+        const searchVal = "<?= urlencode($search) ?>";
+
+        function reloadHalamanWithFilters() {
+            const limitVal = changeLimit.value;
+            // Jika dropdown filterKategori tidak ada (login sebagai admin lab biasa), default-kan ke 'all'
+            const katVal = filterKategori ? filterKategori.value : 'all';
+            window.location.href = `?halaman=1&limit=${limitVal}&filter_kat=${katVal}&search=${searchVal}`;
+        }
+
+        changeLimit.addEventListener('change', reloadHalamanWithFilters);
+        if (filterKategori) {
+            filterKategori.addEventListener('change', reloadHalamanWithFilters);
+        }
+
         const tombolPeminjam = document.querySelectorAll('.tombol-peminjam');
         const modalPeminjam = new bootstrap.Modal(document.getElementById('modalPeminjamAktif'));
         tombolPeminjam.forEach(btn => {

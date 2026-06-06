@@ -1,26 +1,36 @@
 <?php 
 session_start();
-include 'koneksi.php';
+// Penyesuaian Jalur: Mundur satu folder untuk memuat konfigurasi database
+include '../koneksi.php';
 
-if (!isset($_SESSION['id_user']) || $_SESSION['role'] != 'admin') {
-    header("Location: login.php");
+// Validasi hak akses admin berdasarkan awalan kata 'admin_' pada role session
+if (!isset($_SESSION['id_user']) || strpos($_SESSION['role'], 'admin') === false) {
+    header("Location: ../login.php");
     exit;
 }
 
-$id_kategori_admin = isset($_SESSION['id_user']) ? $_SESSION['id_user'] : 1;
+$current_admin_role = $_SESSION['role'];
+// Mengambil ID Kategori hasil pemetaan otomatis saat login
+$id_kategori_admin = isset($_SESSION['id_kategori']) ? $_SESSION['id_kategori'] : 1;
 
+// Ambil nama kategori lab saat ini untuk judul dashboard admin
 $query_nama_lab = mysqli_query($conn, "SELECT nama_kategori FROM kategori WHERE id_kategori = '$id_kategori_admin'");
 $data_lab = mysqli_fetch_array($query_nama_lab);
-$nama_lab_tampil = $data_lab ? $data_lab['nama_kategori'] : "Laboratorium";
+
+if ($current_admin_role === 'admin') {
+    $nama_lab_tampil = "Semua Laboratorium (Global)";
+} else {
+    $nama_lab_tampil = $data_lab ? $data_lab['nama_kategori'] : "Laboratorium";
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Admin <?= $nama_lab_tampil; ?> - Verifikasi Peminjaman Sesi</title>
-    <link rel="stylesheet" href="assets/bootstrap-5.3.8-dist/css/bootstrap.min.css">
+    <title>Admin <?= $nama_lab_tampil; ?> - Verifikasi Pengembalian</title>
+    <link rel="stylesheet" href="../assets/bootstrap-5.3.8-dist/css/bootstrap.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="assets/css/style.css?v=2.6">
+    <link rel="stylesheet" href="../assets/css/style.css?v=2.6">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
         .admin-table-wrapper, .section-title-admin {
@@ -38,29 +48,31 @@ $nama_lab_tampil = $data_lab ? $data_lab['nama_kategori'] : "Laboratorium";
 
         .btn-detail-barang { background-color: #17a2b8; color: white; border: none; padding: 6px 15px; border-radius: 20px; font-weight: 600; font-size: 13px; text-decoration: none; cursor: pointer; }
         .btn-detail-barang:hover { background-color: #138496; color: white; }
+        
+        /* WARNA DIUBAH JADI HIJAU TOSCA */
         .btn-verif { background-color: var(--tosca-tua); color: white; border: none; padding: 6px 20px; border-radius: 20px; font-weight: 600; font-size: 13px; text-decoration: none; display: inline-block; cursor: pointer; }
         .btn-verif:hover { background-color: #14433e; color: white; }
-        .badge-waiting { background-color: #ffc107; color: #212529; padding: 5px 12px; border-radius: 15px; font-size: 13px; font-weight: 600; display: inline-block; }
+        .badge-return-pending { background-color: #e67e22; color: white; padding: 5px 12px; border-radius: 15px; font-size: 13px; font-weight: 600; display: inline-block; }
     </style>
 </head>
 <body>
     
-    <?php include 'header.php'; ?>
+    <?php include '../components/header.php'; ?>
     
     <div class="safe-container px-3 pb-5">
-        <?php include 'sub_header_admin.php'; ?>
+        <?php include '../components/sub_header_admin.php'; ?>
 
         <div class="mx-auto mt-4 mb-2" style="max-width: 1000px;">
-            <h4 class="section-title-admin m-0">📥 Antrean Persetujuan Sesi: <?= htmlspecialchars($nama_lab_tampil); ?></h4>
+            <h4 class="section-title-admin m-0">📤 Antrean Konfirmasi Pengembalian Aset: <?= htmlspecialchars($nama_lab_tampil); ?></h4>
         </div>
 
         <div class="admin-table-wrapper">
             <table class="admin-table">
                 <thead>
                     <tr>
-                        <th class="py-3 px-3 text-start" style="padding-left: 20px !important;">NAMA PEMINJAM</th>
-                        <th class="py-3 px-3 text-center">TANGGAL PINJAM</th>
-                        <th class="py-3 px-3 text-center">RENCANA KEMBALI</th> 
+                        <th class="py-3 px-3 text-start" style="padding-left: 20px !important;">NAMA SISWA</th>
+                        <th class="py-3 px-3 text-center" width="200">WAKTU PINJAM</th>
+                        <th class="py-3 px-3 text-center" width="200">BATAS KEMBALI</th> 
                         <th class="py-3 px-3 text-center">DETAIL BARANG</th>
                         <th class="py-3 px-3 text-center">STATUS</th>
                         <th class="py-3 px-3 text-center">AKSI</th>
@@ -68,7 +80,9 @@ $nama_lab_tampil = $data_lab ? $data_lab['nama_kategori'] : "Laboratorium";
                 </thead>
                 <tbody>
                     <?php 
-                    // FIX QUERY: Mengurutkan id_pinjam MINIMAL (paling awal masuk) agar sesi pengajuan pertama naik ke paling atas
+                    // Menentukan kondisi WHERE berdasarkan batasan hak akses (Super Admin bebas filter global)
+                    $where_clause = ($current_admin_role === 'admin') ? "WHERE peminjaman.status_pengajuan = 'pending_kembali'" : "WHERE peminjaman.status_pengajuan = 'pending_kembali' AND barang.id_kategori = '$id_kategori_admin'";
+
                     $query = "SELECT peminjaman.tgl_pinjam, peminjaman.tgl_kembali_rencana, peminjaman.id_user, users.nama_lengkap,
                                      MIN(peminjaman.id_pinjam) as order_id,
                                      GROUP_CONCAT(barang.nama_barang ORDER BY peminjaman.id_pinjam ASC SEPARATOR '||') as list_barang,
@@ -78,7 +92,7 @@ $nama_lab_tampil = $data_lab ? $data_lab['nama_kategori'] : "Laboratorium";
                               FROM peminjaman 
                               JOIN users ON peminjaman.id_user = users.id_user 
                               JOIN barang ON peminjaman.id_barang = barang.id_barang 
-                              WHERE peminjaman.status_pengajuan = 'pending' AND barang.id_kategori = '$id_kategori_admin'
+                              $where_clause
                               GROUP BY peminjaman.id_user, peminjaman.tgl_pinjam, peminjaman.tgl_kembali_rencana 
                               ORDER BY order_id ASC";
                               
@@ -94,8 +108,8 @@ $nama_lab_tampil = $data_lab ? $data_lab['nama_kategori'] : "Laboratorium";
                     ?>
                     <tr>
                         <td class="fw-bold text-dark px-3 text-start" style="padding-left: 20px !important;"><?= htmlspecialchars($row['nama_lengkap']) ?></td>
-                        <td class="font-monospace text-secondary text-center"><?= date('d M Y', strtotime($row['tgl_pinjam'])) ?></td>
-                        <td class="font-monospace text-danger fw-bold text-center"><?= date('d M Y', strtotime($row['tgl_kembali_rencana'])) ?></td>
+                        <td class="font-monospace text-secondary text-center" style="font-size:13px;"><?= date('d M Y, H:i', strtotime($row['tgl_pinjam'])) ?> WIB</td>
+                        <td class="font-monospace text-danger fw-bold text-center" style="font-size:13px;"><?= date('d M Y, H:i', strtotime($row['tgl_kembali_rencana'])) ?> WIB</td>
                         <td class="text-center">
                             <button type="button" class="btn-detail-barang tombol-detail" 
                                     data-peminjam="<?= htmlspecialchars($row['nama_lengkap']) ?>"
@@ -103,7 +117,7 @@ $nama_lab_tampil = $data_lab ? $data_lab['nama_kategori'] : "Laboratorium";
                                 🔍 Lihat Barang
                             </button>
                         </td>
-                        <td class="text-center"><span class="badge-waiting">Pending</span></td>
+                        <td class="text-center"><span class="badge-return-pending">Selesai Pinjam</span></td>
                         <td class="text-center">
                             <button type="button" class="btn-verif tombol-setuju" 
                                     data-user="<?= $row['id_user'] ?>" 
@@ -113,14 +127,14 @@ $nama_lab_tampil = $data_lab ? $data_lab['nama_kategori'] : "Laboratorium";
                                     data-id-pinjam-raw="<?= htmlspecialchars($row['list_id_pinjam']) ?>"
                                     data-no-hp="<?= htmlspecialchars($no_hp_tampil) ?>"
                                     data-keperluan="<?= htmlspecialchars($keperluan_tampil) ?>">
-                               Verifikasi Sesi
+                               Konfirmasi Masuk
                             </button>
                         </td>
                     </tr>
                     <?php 
                         }
                     } else {
-                        echo "<tr><td colspan='6' style='padding: 60px;' class='text-muted text-center'><h5>Tidak ada antrean pengajuan baru untuk laboratorium ini.</h5></td></tr>";
+                        echo "<tr><td colspan='6' style='padding: 60px;' class='text-muted text-center'><h5>Tidak ada antrean konfirmasi pengembalian barang di laboratorium ini.</h5></td></tr>";
                     }
                     ?>
                 </tbody>
@@ -132,11 +146,11 @@ $nama_lab_tampil = $data_lab ? $data_lab['nama_kategori'] : "Laboratorium";
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content" style="border: 2px solid #17a2b8; border-radius: 20px;">
                 <div class="modal-header text-white" style="background-color: #17a2b8; border-top-left-radius: 17px; border-top-right-radius: 17px;">
-                    <h5 class="modal-title fw-bold">Daftar Barang Dipinjam</h5>
+                    <h5 class="modal-title fw-bold">Daftar Barang Dikembangkan</h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body p-4">
-                    <p class="text-muted">Peminjam: <strong id="detail_nama_peminjam" class="text-dark"></strong></p>
+                    <p class="text-muted">Siswa: <strong id="detail_nama_peminjam" class="text-dark"></strong></p>
                     <hr>
                     <ul id="container_list_barang" class="list-group list-group-flush fw-bold text-secondary"></ul>
                 </div>
@@ -147,39 +161,21 @@ $nama_lab_tampil = $data_lab ? $data_lab['nama_kategori'] : "Laboratorium";
     <div class="modal fade" id="modalVerifikasi" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered modal-lg">
             <div class="modal-content" style="border: 2px solid var(--tosca-tua); border-radius: 20px;">
-                <div class="modal-header" style="background-color: var(--tosca-tua); border-top-left-radius: 17px; border-top-right-radius: 17px;">
-                    <h5 class="modal-title text-white fw-bold">⚙️ Verifikasi Selektif Barang</h5>
+                <div class="modal-header text-white" style="background-color: var(--tosca-tua); border-top-left-radius: 17px; border-top-right-radius: 17px;">
+                    <h5 class="modal-title fw-bold">⚙️ Validasi Fisik Pengembalian Aset</h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                <form action="admin_verifikasi_proses.php" method="POST">
+                <form action="admin_verifikasi_proses_pengembalian.php" method="POST">
                     <div class="modal-body p-4">
-                        <p class="text-muted fs-6 mb-3">Siswa Peminjam: <strong id="nama_peminjam_text" class="text-dark"></strong></p>
+                        <p class="text-muted fs-6 mb-3">Siswa Mengembalikan: <strong id="nama_peminjam_text" class="text-dark"></strong></p>
                         
-                        <div class="p-3 mb-4 rounded-3" style="background-color: #f4faf8; border-left: 4px solid var(--tosca-tua);">
-                            <div class="row">
-                                <div class="col-md-4 mb-2 mb-md-0">
-                                    <span class="text-muted small d-block">📱 No. HP / WhatsApp:</span>
-                                    <strong style="color: var(--tosca-tua);" id="modal_no_hp_text">-</strong>
-                                </div>
-                                <div class="col-md-8">
-                                    <span class="text-muted small d-block">📝 Deskripsi Keperluan:</span>
-                                    <p class="mb-0 text-dark fw-semibold small" id="modal_keperluan_text" style="line-height: 1.4;">-</p>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="mb-4">
-                            <label class="form-label fw-bold" style="color: var(--tosca-tua);">Nama Pengawas Piket Hari Ini :</label>
-                            <input type="text" name="pengawas" class="form-control" style="border: 2px solid var(--tosca-tua); border-radius: 10px; max-width: 400px;" placeholder="Tulis nama pengawas piket" required>
-                        </div>
-
-                        <label class="form-label fw-bold" style="color: var(--tosca-tua);">Tentukan Keputusan Per Item Barang:</label>
+                        <label class="form-label fw-bold" style="color: var(--tosca-tua);">Verifikasi Kondisi Kelayakan Pengembalian:</label>
                         <div class="table-responsive mt-1">
-                            <table class="table table-bordered align-middle text-center" style="border-color: #c4e1db;">
+                            <table class="table table-bordered align-middle text-center" style="border-color: var(--tosca-muda);">
                                 <thead style="background-color: #f4faf8; color: var(--tosca-tua); font-weight: 700;">
                                     <tr>
                                         <th class="text-start" style="padding-left: 15px;">Nama Aset Barang</th>
-                                        <th width="300">Tindakan Admin</th>
+                                        <th width="350">Status Akhir Kelayakan Fisik</th>
                                     </tr>
                                 </thead>
                                 <tbody id="container_item_verifikasi"></tbody>
@@ -188,14 +184,14 @@ $nama_lab_tampil = $data_lab ? $data_lab['nama_kategori'] : "Laboratorium";
                     </div>
                     <div class="modal-footer border-0 px-4 pb-4">
                         <button type="button" class="btn btn-secondary rounded-pill px-4" data-bs-dismiss="modal">Batal</button>
-                        <button type="submit" class="btn text-white rounded-pill px-4" style="background-color: var(--tosca-tua);">Simpan Hasil Verifikasi</button>
+                        <button type="submit" class="btn text-white rounded-pill px-4" style="background-color: var(--tosca-tua);">Konfirmasi Selesai Kembali</button>
                     </div>
                 </form>
             </div>
         </div>
     </div>
 
-    <script src="assets/bootstrap-5.3.8-dist/js/bootstrap.bundle.min.js"></script>
+    <script src="../assets/bootstrap-5.3.8-dist/js/bootstrap.bundle.min.js"></script>
     <script>
         const tombolDetail = document.querySelectorAll('.tombol-detail');
         const modalDetailBS = new bootstrap.Modal(document.getElementById('modalDetail'));
@@ -225,12 +221,7 @@ $nama_lab_tampil = $data_lab ? $data_lab['nama_kategori'] : "Laboratorium";
                 const rawBarang = this.getAttribute('data-barang-raw').split('||');
                 const rawIdPinjam = this.getAttribute('data-id-pinjam-raw').split(',');
                 
-                const noHpSiswa = this.getAttribute('data-no-hp');
-                const keperluanSiswa = this.getAttribute('data-keperluan');
-                
                 document.getElementById('nama_peminjam_text').innerText = namaPeminjam;
-                document.getElementById('modal_no_hp_text').innerText = noHpSiswa;
-                document.getElementById('modal_keperluan_text').innerText = keperluanSiswa;
                 
                 const container = document.getElementById('container_item_verifikasi');
                 container.innerHTML = '';
@@ -242,12 +233,12 @@ $nama_lab_tampil = $data_lab ? $data_lab['nama_kategori'] : "Laboratorium";
                         <tr>
                             <td class="text-start fw-bold text-dark" style="padding-left: 15px;">📦 ${namaBarang}</td>
                             <td>
-                                <div class="d-flex justify-content-center gap-3">
-                                    <input type="radio" class="btn-check" name="status_item[${idPinjam}]" id="accept_${idPinjam}" value="disetujui" checked autocomplete="off">
-                                    <label class="btn btn-sm btn-outline-success px-3 rounded-pill fw-bold" for="accept_${idPinjam}">✅ Setujui</label>
+                                <div class="d-flex justify-content-center gap-2">
+                                    <input type="radio" class="btn-check" name="status_kembali[${idPinjam}]" id="return_good_${idPinjam}" value="kembali_bagus" checked autocomplete="off">
+                                    <label class="btn btn-sm btn-outline-success px-2 rounded-pill fw-bold" for="return_good_${idPinjam}">🟢 Baik</label>
                                     
-                                    <input type="radio" class="btn-check" name="status_item[${idPinjam}]" id="reject_${idPinjam}" value="ditolak" autocomplete="off">
-                                    <label class="btn btn-sm btn-outline-danger px-3 rounded-pill fw-bold" for="reject_${idPinjam}">❌ Tolak</label>
+                                    <input type="radio" class="btn-check" name="status_kembali[${idPinjam}]" id="return_fail_${idPinjam}" value="kembali_rusak" autocomplete="off">
+                                    <label class="btn btn-sm btn-outline-danger px-2 rounded-pill fw-bold" for="return_fail_${idPinjam}">🔴 Rusak/Maintenance</label>
                                 </div>
                             </td>
                         </tr>
@@ -260,11 +251,11 @@ $nama_lab_tampil = $data_lab ? $data_lab['nama_kategori'] : "Laboratorium";
 
         const adminParams = new URLSearchParams(window.location.search);
         const statusVerif = adminParams.get('status');
-        if (statusVerif === 'sukses_verif') {
+        if (statusVerif === 'sukses_kembali') {
             const namaPengawas = adminParams.get('pengawas');
             Swal.fire({
-                title: 'Verifikasi Berhasil!',
-                text: 'Verifikasi selektif berhasil diproses oleh ' + decodeURIComponent(namaPengawas) + '!',
+                title: 'Pengembalian Selesai!',
+                text: 'Aset barang berhasil diterima dan divalidasi oleh ' + decodeURIComponent(namaPengawas) + '.',
                 icon: 'success',
                 confirmButtonColor: '#1e6f65'
             }).then(() => {
@@ -272,6 +263,6 @@ $nama_lab_tampil = $data_lab ? $data_lab['nama_kategori'] : "Laboratorium";
             });
         }
     </script>
-    <?php include 'footer.php'; ?>
+    <?php include '../components/footer.php'; ?>
 </body>
 </html>

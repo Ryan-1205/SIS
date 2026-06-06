@@ -1,6 +1,7 @@
 <?php 
-include 'koneksi.php'; 
 session_start();
+// PENYESUAIAN JALUR: Mundur satu folder karena file ini berjalan di dalam folder siswa/
+include '../koneksi.php'; 
 
 // Pastikan user sudah login untuk mengambil data antrean pribadinya
 $id_user_login = isset($_SESSION['id_user']) ? $_SESSION['id_user'] : 0;
@@ -10,7 +11,8 @@ $foto_master_db = "default_user.jpg";
 if ($id_user_login > 0) {
     $query_user = mysqli_query($conn, "SELECT foto_resmi FROM users WHERE id_user = '$id_user_login'");
     if ($row_user = mysqli_fetch_assoc($query_user)) {
-        if (!empty($row_user['foto_resmi']) && file_exists("assets/img/" . $row_user['foto_resmi'])) {
+        // PENYESUAIAN JALUR FOTO: Ditambahkan ../assets/ untuk pengecekan file fisik dari subfolder
+        if (!empty($row_user['foto_resmi']) && file_exists("../assets/img/" . $row_user['foto_resmi'])) {
             $foto_master_db = $row_user['foto_resmi'];
         }
     }
@@ -23,7 +25,7 @@ if (!isset($_SESSION['keranjang'])) {
 }
 
 // Ambil data referer (halaman asal) untuk mengarahkan tombol "+ Tambah Barang" secara dinamis
-$halaman_kembali = 'index.php'; 
+$halaman_kembali = '../index.php'; 
 if (isset($_SERVER['HTTP_REFERER'])) {
     $halaman_kembali = $_SERVER['HTTP_REFERER'];
 }
@@ -35,9 +37,9 @@ if (isset($_SERVER['HTTP_REFERER'])) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>List Pinjam Barang - SIS</title>
-    <link rel="stylesheet" href="assets/bootstrap-5.3.8-dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="../assets/bootstrap-5.3.8-dist/css/bootstrap.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="assets/css/style.css?v=1.4">
+    <link rel="stylesheet" href="../assets/css/style.css?v=1.4">
     <style>
         .admin-table-wrapper {
             max-width: 1000px;
@@ -88,16 +90,15 @@ if (isset($_SERVER['HTTP_REFERER'])) {
         }
         .status-pending { background-color: #ffeaa7; color: #e67e22; }
         .status-approved { background-color: #d4edda; color: #155724; }
-        .status-returning { background-color: #d1ecf1; color: #0c5460; } /* Tambahan Style Status Baru */
+        .status-returning { background-color: #d1ecf1; color: #0c5460; }
         
-        /* Box Webcam yang disembunyikan di awal */
         .webcam-section { display: none; }
     </style>
 </head>
 <body>
 
-    <?php include 'header.php'; ?>
-    <?php include 'sub_header_siswa.php'; ?>
+    <?php include '../components/header.php'; ?>
+    <?php include '../components/sub_header_siswa.php'; ?>
 
     <form action="form_final_pinjam.php" method="POST" id="formPinjam">
         
@@ -120,6 +121,7 @@ if (isset($_SERVER['HTTP_REFERER'])) {
                         <?php 
                         if (!empty($_SESSION['keranjang'])) {
                             foreach ($_SESSION['keranjang'] as $id_item) {
+                                $id_item = mysqli_real_escape_string($conn, $id_item);
                                 $query_item = "SELECT b.*, k.nama_kategori 
                                                FROM barang b 
                                                JOIN kategori k ON b.id_kategori = k.id_kategori 
@@ -167,7 +169,7 @@ if (isset($_SERVER['HTTP_REFERER'])) {
                 <table class="admin-table">
                     <thead>
                         <tr>
-                            <th>TANGGAL PENGAJUAN</th>
+                            <th>WAKTU PENGAJUAN</th>
                             <th class="text-start">NAMA BARANG</th>
                             <th>KATEGORI</th>
                             <th>STATUS PROSES</th>
@@ -188,7 +190,7 @@ if (isset($_SERVER['HTTP_REFERER'])) {
                             while ($antrean = mysqli_fetch_assoc($res_antrean)) {
                         ?>
                             <tr>
-                                <td class="text-muted font-monospace"><?= date('d M Y - H:i', strtotime($antrean['tgl_pinjam'])); ?> WIB</td>
+                                <td class="text-muted font-monospace" style="font-size:13px;"><?= date('d M Y, H:i', strtotime($antrean['tgl_pinjam'])); ?> WIB</td>
                                 <td class="fw-bold text-start text-dark"><?= htmlspecialchars($antrean['nama_barang']); ?></td>
                                 <td>
                                     <span class="badge-lab">📍 <?= htmlspecialchars($antrean['nama_kategori']); ?></span>
@@ -221,16 +223,16 @@ if (isset($_SERVER['HTTP_REFERER'])) {
                     <thead>
                         <tr>
                             <th class="text-start" style="padding-left: 20px;">NAMA BARANG</th>
-                            <th>TANGGAL PINJAM</th>
-                            <th>RENCANA KEMBALI</th>
+                            <th>WAKTU PINJAM</th>
+                            <th>BATAS KEMBALI</th>
                             <th class="text-start">KEPERLUAN</th>
                             <th>NO. HANDPHONE</th>
                             <th>STATUS</th>
-                            <th>AKSI</th> </tr>
+                            <th>AKSI</th> 
+                        </tr>
                     </thead>
                     <tbody>
                         <?php 
-                        // MODIFIKASI: Query diperluas agar bisa membaca status 'disetujui' DAN 'pending_kembali'
                         $query_disetujui = "SELECT p.*, b.nama_barang FROM peminjaman p
                                             JOIN barang b ON p.id_barang = b.id_barang
                                             WHERE p.id_user = '$id_user_login' AND p.status_pengajuan IN ('disetujui', 'pending_kembali')
@@ -242,10 +244,10 @@ if (isset($_SERVER['HTTP_REFERER'])) {
                         ?>
                             <tr>
                                 <td class="fw-bold text-start text-dark" style="padding-left: 20px;"><?= htmlspecialchars($disetujui['nama_barang']); ?></td>
-                                <td class="font-monospace text-secondary"><?= date('d M Y', strtotime($disetujui['tgl_pinjam'])); ?></td>
-                                <td class="font-monospace text-danger fw-bold"><?= date('d M Y', strtotime($disetujui['tgl_kembali_rencana'])); ?></td>
+                                <td class="font-monospace text-secondary" style="font-size:13px;"><?= date('d M Y, H:i', strtotime($disetujui['tgl_pinjam'])); ?> WIB</td>
+                                <td class="font-monospace text-danger fw-bold" style="font-size:13px;"><?= date('d M Y, H:i', strtotime($disetujui['tgl_kembali_rencana'])); ?> WIB</td>
                                 <td class="text-start text-muted small"><?= htmlspecialchars($disetujui['keperluan'] ? $disetujui['keperluan'] : '-'); ?></td>
-                                <td class="fw-bold text-secondary"><?= htmlspecialchars($disetujui['no_hp'] ? $disetujui['no_hp'] : '-'); ?></td>
+                                <td class="fw-bold text-secondary" style="font-size:13px;"><?= htmlspecialchars($disetujui['no_hp'] ? $disetujui['no_hp'] : '-'); ?></td>
                                 <td>
                                     <?php if ($disetujui['status_pengajuan'] == 'disetujui'): ?>
                                         <span class="badge-status status-approved">✔️ Dipinjam</span>
@@ -274,7 +276,7 @@ if (isset($_SERVER['HTTP_REFERER'])) {
             </div>
         </div>
 
-        <div class="fixed-bottom action-footer" style="background-color: var(--tosca-tua, #1e6f65); height: 70px;">
+        <div class="fixed-bottom action-footer" style="background-color: var(--tosca-tua, #1e6f65); height: 70px; z-index: 1030;">
             <div class="safe-container d-flex align-items-center justify-content-between px-3 h-100">
                 <div>
                     <?php if (!empty($_SESSION['keranjang'])): ?>
@@ -305,16 +307,16 @@ if (isset($_SERVER['HTTP_REFERER'])) {
                     </div>
                     <div class="modal-body p-4">
                         <div id="formFieldsContainer">
-                            <p class="text-muted small mb-3">Silakan tentukan tanggal pemakaian aset lab beserta data kontak operasional.</p>
+                            <p class="text-muted small mb-3">Silakan tentukan waktu pemakaian aset lab beserta data kontak operasional.</p>
                             
                             <div class="mb-3">
-                                <label class="form-label fw-bold" style="color: var(--tosca-tua);">Tanggal Mulai Pinjam :</label>
-                                <input type="date" name="tgl_pinjam" id="modal_tgl_pinjam" class="form-control" style="border: 2px solid var(--tosca-tua); border-radius: 10px;" required>
+                                <label class="form-label fw-bold" style="color: var(--tosca-tua);">Waktu Mulai Pinjam :</label>
+                                <input type="datetime-local" name="tgl_pinjam" id="modal_tgl_pinjam" class="form-control" style="border: 2px solid var(--tosca-tua); border-radius: 10px;" required>
                             </div>
                             
                             <div class="mb-3">
-                                <label class="form-label fw-bold" style="color: var(--tosca-tua);">Rencana Tanggal Kembali :</label>
-                                <input type="date" name="tgl_kembali_rencana" id="modal_tgl_kembali" class="form-control" style="border: 2px solid var(--tosca-tua); border-radius: 10px;" required>
+                                <label class="form-label fw-bold" style="color: var(--tosca-tua);">Rencana Waktu Kembali :</label>
+                                <input type="datetime-local" name="tgl_kembali_rencana" id="modal_tgl_kembali" class="form-control" style="border: 2px solid var(--tosca-tua); border-radius: 10px;" required>
                             </div>
 
                             <div class="mb-3">
@@ -332,9 +334,7 @@ if (isset($_SERVER['HTTP_REFERER'])) {
                             <label class="form-label d-block fw-bold" style="color: var(--tosca-tua);">Pindai Wajah Anda (Validasi Akhir) :</label>
                             <div style="position: relative; width: 320px; height: 240px; margin: 0 auto; background: #000; border-radius: 12px; overflow: hidden; border: 2px solid var(--tosca-tua);">
                                 <video id="webcam" autoplay muted width="320" height="240" style="position: absolute; left:0; top:0; width: 100%; height: 100%; object-fit: cover; z-index: 1;"></video>
-                                
                                 <canvas id="previewFoto" style="position: absolute; left:0; top:0; width: 100%; height: 100%; object-fit: cover; z-index: 3; display: none;"></canvas>
-                                
                                 <div id="scanStatus" class="text-white p-2 d-flex align-items-center justify-content-center text-center" style="position: absolute; width:100%; height:100%; background: rgba(0,0,0,0.75); font-size: 13px; left:0; top:0; z-index: 5;">
                                     Memuat Sistem Kecerdasan AI Wajah...
                                 </div>
@@ -373,9 +373,8 @@ if (isset($_SERVER['HTTP_REFERER'])) {
         </div>
     </div>
 
-    <script src="assets/bootstrap-5.3.8-dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <script src="assets/js/face-api.min.js"></script>
+    <script src="../assets/bootstrap-5.3.8-dist/js/bootstrap.bundle.min.js"></script>
+    <script src="../assets/js/face-api.min.js"></script>
     
     <script>
         const tombolHapus = document.querySelectorAll('.tombol-hapus');
@@ -386,20 +385,38 @@ if (isset($_SERVER['HTTP_REFERER'])) {
                 const idBarang = this.getAttribute('data-id');
                 const namaBarang = this.getAttribute('data-nama');
                 document.getElementById('nama_barang_hapus').innerText = namaBarang;
+                
                 document.getElementById('link_eksekusi_hapus').setAttribute('href', 'keranjang_hapus.php?id=' + idBarang);
                 modalHapusBS.show();
             });
         });
 
-        // ================= LOGIKA UTAMA INTEGRASI FACE SCANNER =================
         const modalTanggalBS = new bootstrap.Modal(document.getElementById('modalInputTanggal'));
         let streamWebcam = null;
         let intervalScan = null;
 
+        // FUNGSI UTK MENDAPATKAN FORMAT DATETIME LOCAL (YYYY-MM-DDTHH:MM)
+        function dapetWaktuSekarangLokal() {
+            const sekarang = new Date();
+            const offset = sekarang.getTimezoneOffset() * 60000; // Penyesuaian ke zona waktu lokal (WIB/sesuai device)
+            const waktuLokal = new Date(sekarang.getTime() - offset);
+            return waktuLokal.toISOString().slice(0, 16);
+        }
+
         function bukaModalTanggal() {
-            const hariIni = new Date().toISOString().split('T')[0];
-            document.getElementById('modal_tgl_pinjam').min = hariIni;
-            document.getElementById('modal_tgl_kembali').min = hariIni;
+            const sekarangWaktuLokal = dapetWaktuSekarangLokal();
+            
+            // Waktu mulai pinjam tetap default-nya saat ini
+            document.getElementById('modal_tgl_pinjam').value = sekarangWaktuLokal;
+            
+            // HAPUS ATAU KOMENTARI BARIS VALUE KEMBALI
+            document.getElementById('modal_tgl_kembali').value = ""; // Membuatnya kosong secara default
+            
+            // Batas minimum tetap berjalan agar siswa tidak bisa pilih tanggal backdate (hari kemarin)
+            document.getElementById('modal_tgl_pinjam').min = sekarangWaktuLokal;
+            document.getElementById('modal_tgl_kembali').min = sekarangWaktuLokal;
+            
+            // ... kode sisanya ke bawah biarkan tetap sama
             
             document.getElementById('formFieldsContainer').style.display = 'block';
             document.getElementById('webcamSection').style.display = 'none';
@@ -441,12 +458,12 @@ if (isset($_SERVER['HTTP_REFERER'])) {
             const keperluan = document.getElementById('modal_keperluan').value.trim();
 
             if (tglPinjam === "" || tglKembali === "" || noHp === "" || keperluan === "") {
-                Swal.fire({ title: '⚠️ Input Belum Lengkap', text: 'Mohon lengkapi Tanggal, No. HP, dan Deskripsi Keperluan!', icon: 'warning', confirmButtonColor: '#1e6f65' });
+                Swal.fire({ title: '⚠️ Input Belum Lengkap', text: 'Mohon lengkapi Waktu Pinjam, No. HP, dan Deskripsi Keperluan!', icon: 'warning', confirmButtonColor: '#1e6f65' });
                 return;
             }
 
             if (new Date(tglKembali) < new Date(tglPinjam)) {
-                Swal.fire({ title: '❌ Logika Tanggal Salah', text: 'Rencana tanggal pengembalian tidak boleh mendahului tanggal mulai meminjam.', icon: 'error', confirmButtonColor: '#1e6f65' });
+                Swal.fire({ title: '❌ Logika Waktu Salah', text: 'Rencana waktu pengembalian tidak boleh mendahului waktu mulai meminjam.', icon: 'error', confirmButtonColor: '#1e6f65' });
                 return;
             }
 
@@ -490,14 +507,14 @@ if (isset($_SERVER['HTTP_REFERER'])) {
         async function initFaceAPI() {
             const statusDiv = document.getElementById('scanStatus');
             try {
-                await faceapi.nets.ssdMobilenetv1.loadFromUri('assets/models');
-                await faceapi.nets.faceLandmark68Net.loadFromUri('assets/models');
-                await faceapi.nets.faceRecognitionNet.loadFromUri('assets/models');
+                await faceapi.nets.ssdMobilenetv1.loadFromUri('../assets/models');
+                await faceapi.nets.faceLandmark68Net.loadFromUri('../assets/models');
+                await faceapi.nets.faceRecognitionNet.loadFromUri('../assets/models');
                 
                 statusDiv.innerText = "Mencari & mengunci wajah depan kamera...";
 
                 const namaFileMaster = "<?= $foto_master_db; ?>";
-                const imgReference = await faceapi.fetchImage('assets/img/' + namaFileMaster);
+                const imgReference = await faceapi.fetchImage('../assets/img/' + namaFileMaster);
                 
                 const refDescriptor = await faceapi.detectSingleFace(imgReference).withFaceLandmarks().withFaceDescriptor();
 
@@ -588,5 +605,7 @@ if (isset($_SERVER['HTTP_REFERER'])) {
             Swal.fire({ title: 'Gagal!', text: 'Gagal memproses pengajuan ke database.', icon: 'error', confirmButtonColor: '#1e6f65' }).then(() => { window.history.replaceState({}, document.title, window.location.pathname); });
         }
     </script>
+
+    <?php include '../components/footer.php'; ?>
 </body>
 </html>

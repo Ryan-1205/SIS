@@ -1,41 +1,59 @@
 <?php
 session_start();
-include 'koneksi.php';
+// Mengatur zona waktu agar fungsi date() mengambil waktu WIB secara akurat jika fallback berjalan
+date_default_timezone_set('Asia/Jakarta');
+
+// PENYESUAIAN JALUR: Mundur satu folder karena file ini berjalan di dalam subfolder siswa/
+include '../koneksi.php';
+
+// Validasi hak akses siswa
+if (!isset($_SESSION['id_user'])) {
+    header("Location: ../login.php");
+    exit;
+}
 
 if (isset($_POST['pinjam_pilihan']) && !empty($_POST['pinjam_pilihan'])) {
     $items = $_POST['pinjam_pilihan'];
     $id_ref = time();
     
-    // PERBAIKAN: Tangkap tanggal asli dari kalender device user yang dikirim lewat form
+    // Tangkap tanggal dan jam penuh dari JavaScript gawai (device) siswa
     if (isset($_POST['tgl_kembali_real']) && !empty($_POST['tgl_kembali_real'])) {
         $tgl_kembali_asli = mysqli_real_escape_string($conn, $_POST['tgl_kembali_real']);
     } else {
-        // Fallback cadangan jika karena suatu hal JavaScript device gagal mengirim data
-        $tgl_kembali_asli = date('Y-m-d'); 
+        // Fallback cadangan jika JavaScript gawai gagal mengirim data
+        $tgl_kembali_asli = date('Y-m-d H:i:s'); 
     }
     
-    // Tangkap nama pengawas yang dikirim form
+    // Tangkap nama pengawas piket penerima yang diinput siswa lewat form modal
     $pengawas = isset($_POST['pengawas_penerima']) ? mysqli_real_escape_string($conn, $_POST['pengawas_penerima']) : '-';
 
     foreach ($items as $id_pinjam) {
-        // Update tabel peminjaman (Menyimpan status 'kembali' dan tanggal dari device user)
-        // Note: Jika di struktur tabelmu ada kolom pengawas, silakan selipkan di query ini, contoh: , pengawas_penerima='$pengawas'
-        mysqli_query($conn, "UPDATE peminjaman SET status_pengajuan='kembali', tgl_kembali_asli='$tgl_kembali_asli' WHERE id_pinjam='$id_pinjam'");
+        $id_pinjam = mysqli_real_escape_string($conn, $id_pinjam);
+
+        /* SINKRONISASI LOGIKA DATABASE RESMI:
+           1. Ubah status transaksi menjadi 'pending_kembali' (Menunggu Validasi Fisik Admin).
+           2. Simpan waktu pengembalian riil device siswa ke 'tgl_kembali_asli'.
+           3. Masukkan calon nama pengawas penerima sementara ke kolom 'diverifikasi_oleh' (nanti bisa di-override admin saat approve).
+        */
+        $query_update = "UPDATE peminjaman 
+                         SET status_pengajuan = 'pending_kembali', 
+                             tgl_kembali_asli = '$tgl_kembali_asli', 
+                             diverifikasi_oleh = '$pengawas' 
+                         WHERE id_pinjam = '$id_pinjam' AND status_pengajuan = 'disetujui'";
         
-        // Ambil id_barang untuk update status barang
-        $res = mysqli_query($conn, "SELECT id_barang FROM peminjaman WHERE id_pinjam='$id_pinjam'");
-        $data = mysqli_fetch_assoc($res);
-        $id_barang = $data['id_barang'];
+        mysqli_query($conn, $query_update);
         
-        // Kembalikan status barang jadi tersedia
-        mysqli_query($conn, "UPDATE barang SET status='tersedia' WHERE id_barang='$id_barang'");
+        /* CATATAN LOGISTIK: 
+           Status fisik barang di tabel `barang` tetap 'dipinjam' dan tidak diubah di sini.
+           Ubah status menjadi 'tersedia' baru dieksekusi setelah Admin menyetujui di backend admin.
+        */
     }
     
-    // Mempertahankan struktur bawaan dengan melempar parameter sukses
-    header("Location: kembali_berhasil.php?id_ref=$id_ref&status=sukses_kembali");
+    // JALUR REDIRECT SUKSES: Diarahkan ke kembali_berhasil.php dalam folder siswa/ yang sama
+    header("Location: kembali_berhasil.php?id_ref=$id_ref&status=sukses_kembali&pengawas=" . urlencode($pengawas) . "&count=" . count($items));
     exit;
 } else {
-    // Jika lolos atau ditembak langsung, kembalikan ke list dengan status error
+    // JALUR REDIRECT GAGAL: Dikembalikan ke list_kembali.php dalam folder siswa/ yang sama
     header("Location: list_kembali.php?status=gagal_pilih");
     exit;
 }
