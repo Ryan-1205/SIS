@@ -2,7 +2,6 @@
 session_start();
 include 'koneksi.php';
 
-// Validasi akses admin
 if (!isset($_SESSION['id_user']) || $_SESSION['role'] != 'admin') {
     header("Location: login.php");
     exit;
@@ -10,12 +9,9 @@ if (!isset($_SESSION['id_user']) || $_SESSION['role'] != 'admin') {
 
 $id_kategori_admin = isset($_SESSION['id_user']) ? $_SESSION['id_user'] : 1;
 
-// Ambil nama kategori lab saat ini untuk judul dashboard admin
 $query_nama_lab = mysqli_query($conn, "SELECT nama_kategori FROM kategori WHERE id_kategori = '$id_kategori_admin'");
 $data_lab = mysqli_fetch_array($query_nama_lab);
 $nama_lab_tampil = $data_lab ? $data_lab['nama_kategori'] : "Laboratorium";
-
-$search = isset($_GET['search']) ? $_GET['search'] : '';
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -27,18 +23,23 @@ $search = isset($_GET['search']) ? $_GET['search'] : '';
     <link rel="stylesheet" href="assets/css/style.css?v=2.6">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
-        .admin-search-container, .admin-table-wrapper, .section-title-admin {
+        .admin-table-wrapper, .section-title-admin {
             max-width: 1000px !important;
             margin-left: auto;
             margin-right: auto;
         }
         .section-title-admin { color: var(--tosca-tua); font-weight: 700; }
         
+        .admin-table-wrapper { margin-top: 30px; border: 2px solid var(--tosca-tua); background: white; border-radius: 10px; overflow: hidden; }
+        .admin-table { width: 100%; border-collapse: collapse; text-align: center; }
+        .admin-table th { color: white; background-color: var(--tosca-tua); font-weight: 700; padding: 20px 15px; font-size: 14px; }
+        .admin-table td { padding: 20px 15px; border-bottom: 1px solid var(--tosca-muda); color: #333; font-size: 15px; vertical-align: middle; }
+        .admin-table tr:last-child td { border-bottom: none; }
+
         .btn-detail-barang { background-color: #17a2b8; color: white; border: none; padding: 6px 15px; border-radius: 20px; font-weight: 600; font-size: 13px; text-decoration: none; cursor: pointer; }
         .btn-detail-barang:hover { background-color: #138496; color: white; }
         .btn-verif { background-color: var(--tosca-tua); color: white; border: none; padding: 6px 20px; border-radius: 20px; font-weight: 600; font-size: 13px; text-decoration: none; display: inline-block; cursor: pointer; }
         .btn-verif:hover { background-color: #14433e; color: white; }
-        
         .badge-waiting { background-color: #ffc107; color: #212529; padding: 5px 12px; border-radius: 15px; font-size: 13px; font-weight: 600; display: inline-block; }
     </style>
 </head>
@@ -53,18 +54,11 @@ $search = isset($_GET['search']) ? $_GET['search'] : '';
             <h4 class="section-title-admin m-0">📥 Antrean Persetujuan Sesi: <?= htmlspecialchars($nama_lab_tampil); ?></h4>
         </div>
 
-        <div class="admin-search-container">
-            <form action="" method="GET" class="admin-search-form">
-                <input type="text" name="search" placeholder="Cari nama siswa yang mengajukan..." value="<?= htmlspecialchars($search) ?>">
-                <button type="submit">Cari</button>
-            </form>
-        </div>
-
-        <div class="admin-table-wrapper table-responsive">
-            <table class="admin-table w-100 table-striped align-middle">
+        <div class="admin-table-wrapper">
+            <table class="admin-table">
                 <thead>
                     <tr>
-                        <th class="py-3 px-3 text-start">NAMA PEMINJAM</th>
+                        <th class="py-3 px-3 text-start" style="padding-left: 20px !important;">NAMA PEMINJAM</th>
                         <th class="py-3 px-3 text-center">TANGGAL PINJAM</th>
                         <th class="py-3 px-3 text-center">RENCANA KEMBALI</th> 
                         <th class="py-3 px-3 text-center">DETAIL BARANG</th>
@@ -74,23 +68,20 @@ $search = isset($_GET['search']) ? $_GET['search'] : '';
                 </thead>
                 <tbody>
                     <?php 
-                    // FIXED QUERY 100% SESUAI DATABASE LU LEK: no_hp & keperluan ditarik dari tabel peminjaman
+                    // FIX QUERY: Mengurutkan id_pinjam MINIMAL (paling awal masuk) agar sesi pengajuan pertama naik ke paling atas
                     $query = "SELECT peminjaman.tgl_pinjam, peminjaman.tgl_kembali_rencana, peminjaman.id_user, users.nama_lengkap,
-                                     GROUP_CONCAT(barang.nama_barang SEPARATOR '||') as list_barang,
-                                     GROUP_CONCAT(peminjaman.id_pinjam SEPARATOR ',') as list_id_pinjam,
-                                     GROUP_CONCAT(IFNULL(peminjaman.no_hp, '-') SEPARATOR '||') as list_no_hp,
-                                     GROUP_CONCAT(IFNULL(peminjaman.keperluan, '-') SEPARATOR '||') as list_keperluan
+                                     MIN(peminjaman.id_pinjam) as order_id,
+                                     GROUP_CONCAT(barang.nama_barang ORDER BY peminjaman.id_pinjam ASC SEPARATOR '||') as list_barang,
+                                     GROUP_CONCAT(peminjaman.id_pinjam ORDER BY peminjaman.id_pinjam ASC SEPARATOR ',') as list_id_pinjam,
+                                     GROUP_CONCAT(IFNULL(peminjaman.no_hp, '-') ORDER BY peminjaman.id_pinjam ASC SEPARATOR '||') as list_no_hp,
+                                     GROUP_CONCAT(IFNULL(peminjaman.keperluan, '-') ORDER BY peminjaman.id_pinjam ASC SEPARATOR '||') as list_keperluan
                               FROM peminjaman 
                               JOIN users ON peminjaman.id_user = users.id_user 
                               JOIN barang ON peminjaman.id_barang = barang.id_barang 
-                              WHERE peminjaman.status_pengajuan = 'pending' AND barang.id_kategori = '$id_kategori_admin'";
-
-                    if ($search != '') {
-                        $search_escaped = mysqli_real_escape_string($conn, $search);
-                        $query .= " AND users.nama_lengkap LIKE '%$search_escaped%'";
-                    }
-
-                    $query .= " GROUP BY peminjaman.id_user, peminjaman.tgl_pinjam, peminjaman.tgl_kembali_rencana ORDER BY peminjaman.tgl_pinjam ASC";
+                              WHERE peminjaman.status_pengajuan = 'pending' AND barang.id_kategori = '$id_kategori_admin'
+                              GROUP BY peminjaman.id_user, peminjaman.tgl_pinjam, peminjaman.tgl_kembali_rencana 
+                              ORDER BY order_id ASC";
+                              
                     $sql = mysqli_query($conn, $query);
 
                     if (mysqli_num_rows($sql) > 0) {
@@ -98,12 +89,11 @@ $search = isset($_GET['search']) ? $_GET['search'] : '';
                             $arr_no_hp = explode('||', $row['list_no_hp']);
                             $arr_keperluan = explode('||', $row['list_keperluan']);
                             
-                            // Cek jika datanya kosong / NULL / strip bawaan database
                             $no_hp_tampil = (!empty($arr_no_hp[0]) && $arr_no_hp[0] !== '-') ? $arr_no_hp[0] : 'Tidak Diisi Peminjam';
                             $keperluan_tampil = (!empty($arr_keperluan[0]) && $arr_keperluan[0] !== '-') ? $arr_keperluan[0] : 'Tidak ada deskripsi keperluan';
                     ?>
                     <tr>
-                        <td class="fw-bold text-dark px-3 text-start"><?= htmlspecialchars($row['nama_lengkap']) ?></td>
+                        <td class="fw-bold text-dark px-3 text-start" style="padding-left: 20px !important;"><?= htmlspecialchars($row['nama_lengkap']) ?></td>
                         <td class="font-monospace text-secondary text-center"><?= date('d M Y', strtotime($row['tgl_pinjam'])) ?></td>
                         <td class="font-monospace text-danger fw-bold text-center"><?= date('d M Y', strtotime($row['tgl_kembali_rencana'])) ?></td>
                         <td class="text-center">
@@ -122,8 +112,7 @@ $search = isset($_GET['search']) ? $_GET['search'] : '';
                                     data-barang-raw="<?= htmlspecialchars($row['list_barang']) ?>"
                                     data-id-pinjam-raw="<?= htmlspecialchars($row['list_id_pinjam']) ?>"
                                     data-no-hp="<?= htmlspecialchars($no_hp_tampil) ?>"
-                                    data-keperluan="<?= htmlspecialchars($keperluan_tampil) ?>"
-                                    data-bs-toggle="modal" data-bs-target="#modalVerifikasi">
+                                    data-keperluan="<?= htmlspecialchars($keperluan_tampil) ?>">
                                Verifikasi Sesi
                             </button>
                         </td>
@@ -180,7 +169,7 @@ $search = isset($_GET['search']) ? $_GET['search'] : '';
                         </div>
 
                         <div class="mb-4">
-                            <label class="form-label fw-bold mb-1" style="color: var(--tosca-tua);">Nama Pengawas Piket Hari Ini :</label>
+                            <label class="form-label fw-bold" style="color: var(--tosca-tua);">Nama Pengawas Piket Hari Ini :</label>
                             <input type="text" name="pengawas" class="form-control" style="border: 2px solid var(--tosca-tua); border-radius: 10px; max-width: 400px;" placeholder="Tulis nama pengawas piket" required>
                         </div>
 
@@ -208,7 +197,6 @@ $search = isset($_GET['search']) ? $_GET['search'] : '';
 
     <script src="assets/bootstrap-5.3.8-dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        // JS Detail
         const tombolDetail = document.querySelectorAll('.tombol-detail');
         const modalDetailBS = new bootstrap.Modal(document.getElementById('modalDetail'));
         
@@ -229,7 +217,7 @@ $search = isset($_GET['search']) ? $_GET['search'] : '';
             });
         });
 
-        // JS Verifikasi
+        const modalVerifBS = new bootstrap.Modal(document.getElementById('modalVerifikasi'));
         const tombolSetuju = document.querySelectorAll('.tombol-setuju');
         tombolSetuju.forEach(button => {
             button.addEventListener('click', function() {
@@ -266,6 +254,7 @@ $search = isset($_GET['search']) ? $_GET['search'] : '';
                     `;
                     container.innerHTML += rowHTML;
                 });
+                modalVerifBS.show();
             });
         });
 
@@ -283,8 +272,6 @@ $search = isset($_GET['search']) ? $_GET['search'] : '';
             });
         }
     </script>
-
     <?php include 'footer.php'; ?>
-
 </body>
 </html>

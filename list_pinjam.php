@@ -88,6 +88,7 @@ if (isset($_SERVER['HTTP_REFERER'])) {
         }
         .status-pending { background-color: #ffeaa7; color: #e67e22; }
         .status-approved { background-color: #d4edda; color: #155724; }
+        .status-returning { background-color: #d1ecf1; color: #0c5460; } /* Tambahan Style Status Baru */
         
         /* Box Webcam yang disembunyikan di awal */
         .webcam-section { display: none; }
@@ -225,13 +226,14 @@ if (isset($_SERVER['HTTP_REFERER'])) {
                             <th class="text-start">KEPERLUAN</th>
                             <th>NO. HANDPHONE</th>
                             <th>STATUS</th>
-                        </tr>
+                            <th>AKSI</th> </tr>
                     </thead>
                     <tbody>
                         <?php 
+                        // MODIFIKASI: Query diperluas agar bisa membaca status 'disetujui' DAN 'pending_kembali'
                         $query_disetujui = "SELECT p.*, b.nama_barang FROM peminjaman p
                                             JOIN barang b ON p.id_barang = b.id_barang
-                                            WHERE p.id_user = '$id_user_login' AND p.status_pengajuan = 'disetujui'
+                                            WHERE p.id_user = '$id_user_login' AND p.status_pengajuan IN ('disetujui', 'pending_kembali')
                                             ORDER BY p.id_pinjam DESC";
                         $res_disetujui = mysqli_query($conn, $query_disetujui);
 
@@ -244,12 +246,27 @@ if (isset($_SERVER['HTTP_REFERER'])) {
                                 <td class="font-monospace text-danger fw-bold"><?= date('d M Y', strtotime($disetujui['tgl_kembali_rencana'])); ?></td>
                                 <td class="text-start text-muted small"><?= htmlspecialchars($disetujui['keperluan'] ? $disetujui['keperluan'] : '-'); ?></td>
                                 <td class="fw-bold text-secondary"><?= htmlspecialchars($disetujui['no_hp'] ? $disetujui['no_hp'] : '-'); ?></td>
-                                <td><span class="badge-status status-approved">✔️ Dipinjam</span></td>
+                                <td>
+                                    <?php if ($disetujui['status_pengajuan'] == 'disetujui'): ?>
+                                        <span class="badge-status status-approved">✔️ Dipinjam</span>
+                                    <?php else: ?>
+                                        <span class="badge-status status-pending">⏳ Proses Pengembalian</span>
+                                    <?php endif; ?>
+                                </td>
+                                <td>
+                                    <?php if ($disetujui['status_pengajuan'] == 'disetujui'): ?>
+                                        <a href="ajukan_kembali.php?id=<?= $disetujui['id_pinjam']; ?>" class="btn btn-sm btn-danger fw-bold px-3 rounded-pill" onclick="return confirm('Apakah Anda yakin ingin mengajukan pengembalian untuk aset ini?')">
+                                            Kembalikan
+                                        </a>
+                                    <?php else: ?>
+                                        <span class="badge-status status-returning small fw-bold">Menunggu Admin</span>
+                                    <?php endif; ?>
+                                </td>
                             </tr>
                         <?php 
                             }
                         } else {
-                            echo "<tr><td colspan='6' class='py-4 text-center text-muted'>Belum ada aset ter-verifikasi yang sedang kamu bawa.</td></tr>";
+                            echo "<tr><td colspan='7' class='py-4 text-center text-muted'>Belum ada aset ter-verifikasi yang sedang kamu bawa.</td></tr>";
                         }
                         ?>
                     </tbody>
@@ -478,7 +495,6 @@ if (isset($_SERVER['HTTP_REFERER'])) {
                 await faceapi.nets.faceRecognitionNet.loadFromUri('assets/models');
                 
                 statusDiv.innerText = "Mencari & mengunci wajah depan kamera...";
-                statusDiv.style.background = "rgba(0,0,0,0.75)";
 
                 const namaFileMaster = "<?= $foto_master_db; ?>";
                 const imgReference = await faceapi.fetchImage('assets/img/' + namaFileMaster);
@@ -506,7 +522,6 @@ if (isset($_SERVER['HTTP_REFERER'])) {
                         const match = faceMatcher.findBestMatch(detections.descriptor);
                         
                         if (match.label !== 'unknown') {
-                            // JIKA COCOK (VALID): Matikan sensor interval tracking
                             clearInterval(intervalScan);
 
                             const vidWidth = video.videoWidth;
@@ -542,12 +557,10 @@ if (isset($_SERVER['HTTP_REFERER'])) {
                             }, 1200);
 
                         } else {
-                            // FIX: REVISI LOGIKA WAJAH SALAH -> Kamera tetap live, latar belakang mencair jadi badge floating merah di bawah
                             statusDiv.style.background = "transparent";
                             statusDiv.innerHTML = "<div class='text-white fw-bold px-3 py-1 rounded-pill shadow-sm' style='background: rgba(220, 53, 69, 0.85); position: absolute; bottom: 10px; font-size: 11px; z-index: 6;'>❌ Wajah Tidak Sesuai Pemilik Akun!</div>";
                         }
                     } else {
-                        // Jika wajah keluar frame total, kembalikan lapisan penutup hitam beralur
                         statusDiv.style.background = "rgba(0,0,0,0.75)";
                         statusDiv.innerHTML = "<span class='text-warning fw-bold'>⚠️ Wajah tidak terdeteksi. Hadapkan muka lurus ke kamera.</span>";
                     }

@@ -17,6 +17,9 @@ $data_lab = mysqli_fetch_array($query_nama_lab);
 $nama_lab_tampil = $data_lab ? $data_lab['nama_kategori'] : "Laboratorium";
 
 $search = isset($_GET['search']) ? $_GET['search'] : '';
+
+// PROSES FILTER UTAMA: Menentukan mode view ('aktif' untuk sedang meminjam, 'history' untuk riwayat)
+$view_mode = isset($_GET['view']) && $_GET['view'] === 'history' ? 'history' : 'aktif';
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -27,7 +30,6 @@ $search = isset($_GET['search']) ? $_GET['search'] : '';
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="assets/css/style.css?v=2.7">
     <style>
-        /* REVISI: Mengaktifkan standar wrapper & table SIS warna tosca secara konsisten */
         .admin-table-wrapper {
             max-width: 1000px;
             margin: 0 auto 30px auto;
@@ -59,7 +61,6 @@ $search = isset($_GET['search']) ? $_GET['search'] : '';
             border-bottom: none;
         }
 
-        /* REVISI: Tombol detail diselaraskan ke tema warna sistem SIS */
         .btn-detail-barang { 
             background-color: var(--tosca-tua); 
             color: white; 
@@ -77,19 +78,9 @@ $search = isset($_GET['search']) ? $_GET['search'] : '';
             color: white; 
         }
 
-        /* Komponen Badge Status */
-        .badge-approved { background-color: #28a745; color: white; padding: 5px 12px; border-radius: 15px; font-size: 13px; font-weight: 600; }
-        .badge-returned { background-color: #0288d1; color: white; padding: 5px 12px; border-radius: 15px; font-size: 13px; font-weight: 600; }
-        .badge-rejected { background-color: #dc3545; color: white; padding: 5px 12px; border-radius: 15px; font-size: 13px; font-weight: 600; }
+        .badge-approved { background-color: #28a745; color: white; padding: 5px 12px; border-radius: 15px; font-size: 12px; font-weight: 600; }
+        .badge-returned { background-color: #0288d1; color: white; padding: 5px 12px; border-radius: 15px; font-size: 12px; font-weight: 600; }
         
-        .section-title-admin { 
-            color: var(--tosca-tua); 
-            font-weight: 700; 
-            max-width: 1000px;
-            margin: 40px auto 15px auto;
-        }
-
-        /* REVISI: Merapikan bar form pencarian agar sejajar */
         .admin-search-container {
             max-width: 1000px;
             margin: 20px auto;
@@ -116,6 +107,16 @@ $search = isset($_GET['search']) ? $_GET['search'] : '';
             border-radius: 8px;
             font-weight: 600;
         }
+        .filter-select {
+            padding: 10px 20px;
+            border: 2px solid var(--tosca-tua);
+            border-radius: 8px;
+            color: var(--tosca-tua);
+            font-weight: 600;
+            outline: none;
+            cursor: pointer;
+            background: white;
+        }
     </style>
 </head>
 <body>
@@ -125,170 +126,108 @@ $search = isset($_GET['search']) ? $_GET['search'] : '';
     <div class="safe-container px-3 pb-5 mt-4">
         <?php include 'sub_header_admin.php'; ?>
 
-        <div class="mx-auto mt-4 mb-2" style="max-width: 1000px;">
+        <div class="mx-auto mt-4 mb-2 d-flex justify-content-between align-items-center" style="max-width: 1000px;">
             <h4 class="fw-bold m-0" style="color: var(--tosca-tua);">📍 Log Aktivitas Peminjaman: <?= htmlspecialchars($nama_lab_tampil); ?></h4>
+            
+            <select class="filter-select" onchange="location = this.value;">
+                <option value="admin_peminjam.php?view=aktif<?= !empty($search) ? '&search='.urlencode($search) : '' ?>" <?= $view_mode == 'aktif' ? 'selected' : '' ?>>🖥️ Sedang Meminjam Aset</option>
+                <option value="admin_peminjam.php?view=history<?= !empty($search) ? '&search='.urlencode($search) : '' ?>" <?= $view_mode == 'history' ? 'selected' : '' ?>>📜 Riwayat Selesai & Ditolak</option>
+            </select>
         </div>
 
         <div class="admin-search-container">
             <form action="" method="GET" class="admin-search-form">
+                <input type="hidden" name="view" value="<?= $view_mode; ?>">
                 <input type="text" name="search" placeholder="Cari nama siswa..." value="<?= htmlspecialchars($search) ?>">
                 <button type="submit">Cari</button>
             </form>
         </div>
 
-        <h4 class="section-title-admin">🖥️ Daftar Siswa yang Sedang Meminjam Aset</h4>
         <div class="admin-table-wrapper">
             <table class="admin-table">
                 <thead>
                     <tr>
-                        <th>NAMA PEMINJAM</th>
+                        <th class="text-start" style="padding-left: 20px;">NAMA PEMINJAM</th>
                         <th>TANGGAL PINJAM</th>
-                        <th>RENCANA KEMBALI</th>
-                        <th>DAFTAR BARANG</th>
+                        <th><?= $view_mode == 'aktif' ? 'RENCANA KEMBALI' : 'TGL KEMBALI ASLI' ?></th>
+                        <th>RINCIAN ASET</th>
                         <th>STATUS</th>
-                        <th>PENGAWAS</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php 
-                    $query_aktif = "SELECT peminjaman.tgl_pinjam, peminjaman.tgl_kembali_rencana, peminjaman.diverifikasi_oleh, users.nama_lengkap,
-                                           GROUP_CONCAT(CONCAT(barang.nama_barang, '::', peminjaman.status_pengajuan) SEPARATOR '||') as list_barang_status
-                                    FROM peminjaman 
-                                    JOIN users ON peminjaman.id_user = users.id_user 
-                                    JOIN barang ON peminjaman.id_barang = barang.id_barang 
-                                    WHERE peminjaman.status_pengajuan = 'disetujui' AND barang.id_kategori = '$id_kategori_admin'";
-
-                    if ($search != '') {
-                        $search_escaped = mysqli_real_escape_string($conn, $search);
-                        $query_aktif .= " AND users.nama_lengkap LIKE '%$search_escaped%'";
-                    }
-
-                    $query_aktif .= " GROUP BY peminjaman.id_user, peminjaman.tgl_pinjam, peminjaman.tgl_kembali_rencana, peminjaman.diverifikasi_oleh ORDER BY peminjaman.tgl_pinjam DESC";
-                    $sql_aktif = mysqli_query($conn, $query_aktif);
-
-                    if (mysqli_num_rows($sql_aktif) > 0) {
-                        while($row = mysqli_fetch_assoc($sql_aktif)) {
-                    ?>
-                    <tr>
-                        <td class="fw-bold text-dark text-start" style="padding-left: 20px;"><?= htmlspecialchars($row['nama_lengkap']) ?></td>
-                        <td class="font-monospace text-secondary"><?= date('d M Y', strtotime($row['tgl_pinjam'])) ?></td>
-                        <td class="font-monospace text-danger fw-bold"><?= date('d M Y', strtotime($row['tgl_kembali_rencana'])) ?></td>
-                        <td>
-                            <button type="button" class="btn-detail-barang tombol-detail" 
-                                    data-peminjam="<?= htmlspecialchars($row['nama_lengkap']) ?>"
-                                    data-items="<?= htmlspecialchars($row['list_barang_status']) ?>">
-                                🔍 Lihat Aset
-                            </button>
-                        </td>
-                        <td><span class="badge-approved">Sedang Dipinjam</span></td>
-                        <td class="text-muted fw-bold"><?= !empty($row['diverifikasi_oleh']) ? htmlspecialchars($row['diverifikasi_oleh']) : 'Admin'; ?></td>
-                    </tr>
-                    <?php 
-                        }
-                    } else {
-                        echo "<tr><td colspan='6' class='py-5 text-center text-muted'><h5>Saat ini tidak ada aset dari lab ini yang sedang dipinjam siswa.</h5></td></tr>";
-                    }
-                    ?>
-                </tbody>
-            </table>
-        </div>
-
-        <h4 class="section-title-admin">📋 KEPERLUAN</h4>
-        <div class="admin-table-wrapper">
-            <table class="admin-table">
-                <thead>
-                    <tr>
-                        <th class="text-start" style="padding-left: 20px;">DESKRIPSI KEPERLUAN</th>
-                        <th width="300">NO. HANDPHONE</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php 
-                    // Query mengambil deskripsi keperluan & nomor hp dari peminjaman aktif yang disesuaikan dengan lab terkait
-                    $query_keperluan = "SELECT peminjaman.keperluan, peminjaman.no_hp FROM peminjaman 
-                                        JOIN barang ON peminjaman.id_barang = barang.id_barang
-                                        JOIN users ON peminjaman.id_user = users.id_user
-                                        WHERE peminjaman.status_pengajuan = 'disetujui' AND barang.id_kategori = '$id_kategori_admin'";
-
-                    // Integrasi fitur pencarian agar sinkron saat admin mencari nama siswa
-                    if ($search != '') {
-                        $query_keperluan .= " AND users.nama_lengkap LIKE '%" . mysqli_real_escape_string($conn, $search) . "%'";
-                    }
-
-                    $query_keperluan .= " ORDER BY peminjaman.id_pinjam DESC";
-                    $sql_keperluan = mysqli_query($conn, $query_keperluan);
-
-                    if (mysqli_num_rows($sql_keperluan) > 0) {
-                        while ($row_k = mysqli_fetch_assoc($sql_keperluan)) {
-                    ?>
-                    <tr>
-                        <td class="text-start text-dark" style="padding-left: 20px;">
-                            <?= htmlspecialchars($row_k['keperluan'] ? $row_k['keperluan'] : 'Tidak ada deskripsi keperluan'); ?>
-                        </td>
-                        <td class="fw-bold text-muted">
-                            <?= htmlspecialchars($row_k['no_hp'] ? $row_k['no_hp'] : '-'); ?>
-                        </td>
-                    </tr>
-                    <?php 
-                        }
-                    } else {
-                        echo "<tr><td colspan='2' class='py-4 text-center text-muted'>Tidak ada data keperluan aktif saat ini.</td></tr>";
-                    }
-                    ?>
-                </tbody>
-            </table>
-        </div>
-        <h4 class="section-title-admin">📜 History Riwayat Peminjaman (Selesai/Ditolak)</h4>
-        <div class="admin-table-wrapper">
-            <table class="admin-table">
-                <thead>
-                    <tr>
-                        <th>NAMA PEMINJAM</th>
-                        <th>TANGGAL PINJAM</th>
-                        <th>RENCANA KEMBALI</th>
-                        <th>KEMBALI ASLI</th>
-                        <th>DAFTAR BARANG</th>
                         <th>VERIFIKATOR</th>
                     </tr>
                 </thead>
                 <tbody>
                     <?php 
-                    $query_history = "SELECT peminjaman.tgl_pinjam, peminjaman.tgl_kembali_rencana, peminjaman.tgl_kembali_asli, peminjaman.diverifikasi_oleh, users.nama_lengkap,
-                                             GROUP_CONCAT(CONCAT(barang.nama_barang, '::', peminjaman.status_pengajuan) SEPARATOR '||') as list_barang_status
+                    if ($view_mode == 'aktif') {
+                        // SQL 1: Untuk data yang aktif sedang meminjam (disetujui / pending_kembali)
+                        $query_sql = "SELECT peminjaman.tgl_pinjam, peminjaman.tgl_kembali_rencana, peminjaman.diverifikasi_oleh, users.nama_lengkap,
+                                             GROUP_CONCAT(CONCAT(barang.nama_barang, '::', peminjaman.status_pengajuan) SEPARATOR '||') as list_barang_status,
+                                             GROUP_CONCAT(IFNULL(peminjaman.no_hp, '-') SEPARATOR '||') as list_no_hp,
+                                             GROUP_CONCAT(IFNULL(peminjaman.keperluan, '-') SEPARATOR '||') as list_keperluan
+                                      FROM peminjaman 
+                                      JOIN users ON peminjaman.id_user = users.id_user 
+                                      JOIN barang ON peminjaman.id_barang = barang.id_barang 
+                                      WHERE peminjaman.status_pengajuan IN ('disetujui', 'pending_kembali') AND barang.id_kategori = '$id_kategori_admin'";
+                    } else {
+                        // SQL 2: Untuk data histori (kembali / ditolak)
+                        $query_sql = "SELECT peminjaman.tgl_pinjam, peminjaman.tgl_kembali_asli, peminjaman.diverifikasi_oleh, users.nama_lengkap,
+                                             GROUP_CONCAT(CONCAT(barang.nama_barang, '::', peminjaman.status_pengajuan) SEPARATOR '||') as list_barang_status,
+                                             GROUP_CONCAT(IFNULL(peminjaman.no_hp, '-') SEPARATOR '||') as list_no_hp,
+                                             GROUP_CONCAT(IFNULL(peminjaman.keperluan, '-') SEPARATOR '||') as list_keperluan
                                       FROM peminjaman 
                                       JOIN users ON peminjaman.id_user = users.id_user 
                                       JOIN barang ON peminjaman.id_barang = barang.id_barang 
                                       WHERE peminjaman.status_pengajuan IN ('kembali', 'ditolak') AND barang.id_kategori = '$id_kategori_admin'";
-
-                    if ($search != '') {
-                        $query_history .= " AND users.nama_lengkap LIKE '%" . mysqli_real_escape_string($conn, $search) . "%'";
                     }
 
-                    $query_history .= " GROUP BY peminjaman.id_user, peminjaman.tgl_pinjam, peminjaman.tgl_kembali_rencana, peminjaman.tgl_kembali_asli, peminjaman.diverifikasi_oleh ORDER BY peminjaman.tgl_pinjam DESC";
-                    $sql_history = mysqli_query($conn, $query_history);
+                    if ($search != '') {
+                        $search_escaped = mysqli_real_escape_string($conn, $search);
+                        $query_sql .= " AND users.nama_lengkap LIKE '%$search_escaped%'";
+                    }
 
-                    if (mysqli_num_rows($sql_history) > 0) {
-                        while($row_h = mysqli_fetch_assoc($sql_history)) {
-                            $tgl_kembali_asli = (!empty($row_h['tgl_kembali_asli']) && $row_h['tgl_kembali_asli'] != '0000-00-00') ? date('d M Y', strtotime($row_h['tgl_kembali_asli'])) : '-';
+                    if ($view_mode == 'aktif') {
+                        $query_sql .= " GROUP BY peminjaman.id_user, peminjaman.tgl_pinjam, peminjaman.tgl_kembali_rencana, peminjaman.diverifikasi_oleh ORDER BY peminjaman.tgl_pinjam DESC";
+                    } else {
+                        $query_sql .= " GROUP BY peminjaman.id_user, peminjaman.tgl_pinjam, peminjaman.tgl_kembali_asli, peminjaman.diverifikasi_oleh ORDER BY peminjaman.tgl_kembali_asli DESC";
+                    }
+
+                    $sql_execute = mysqli_query($conn, $query_sql);
+
+                    if (mysqli_num_rows($sql_execute) > 0) {
+                        while($row = mysqli_fetch_assoc($sql_execute)) {
+                            $arr_no_hp = explode('||', $row['list_no_hp']);
+                            $arr_keperluan = explode('||', $row['list_keperluan']);
+                            $no_hp_tampil = (!empty($arr_no_hp[0]) && $arr_no_hp[0] !== '-') ? $arr_no_hp[0] : 'Tidak Diisi';
+                            $keperluan_tampil = (!empty($arr_keperluan[0]) && $arr_keperluan[0] !== '-') ? $arr_keperluan[0] : 'Tidak ada deskripsi';
+
+                            // Konfigurasi kolom tanggal penutup kanan dinamis
+                            if ($view_mode == 'aktif') {
+                                $tanggal_ujung = date('d M Y', strtotime($row['tgl_kembali_rencana']));
+                                $status_badge = '<span class="badge-approved">Dipinjam</span>';
+                            } else {
+                                $tanggal_ujung = (!empty($row['tgl_kembali_asli']) && $row['tgl_kembali_asli'] != '0000-00-00') ? date('d M Y', strtotime($row['tgl_kembali_asli'])) : '-';
+                                $status_badge = '<span class="badge-returned">Selesai</span>';
+                            }
                     ?>
                     <tr>
-                        <td class="fw-bold text-dark text-start" style="padding-left: 20px;"><?= htmlspecialchars($row_h['nama_lengkap']) ?></td>
-                        <td class="font-monospace text-secondary"><?= date('d M Y', strtotime($row_h['tgl_pinjam'])) ?></td>
-                        <td class="font-monospace text-muted"><?= date('d M Y', strtotime($row_h['tgl_kembali_rencana'])) ?></td>
-                        <td class="font-monospace text-success fw-bold"><?= $tgl_kembali_asli ?></td>
+                        <td class="fw-bold text-dark text-start" style="padding-left: 20px;"><?= htmlspecialchars($row['nama_lengkap']) ?></td>
+                        <td class="font-monospace text-secondary"><?= date('d M Y', strtotime($row['tgl_pinjam'])) ?></td>
+                        <td class="font-monospace fw-bold <?= $view_mode == 'aktif' ? 'text-danger' : 'text-success' ?>"><?= $tanggal_ujung ?></td>
                         <td>
                             <button type="button" class="btn-detail-barang tombol-detail" 
-                                    data-peminjam="<?= htmlspecialchars($row_h['nama_lengkap']) ?>"
-                                    data-items="<?= htmlspecialchars($row_h['list_barang_status']) ?>">
-                                🔍 Lihat Barang
+                                    data-peminjam="<?= htmlspecialchars($row['nama_lengkap']) ?>"
+                                    data-no-hp="<?= htmlspecialchars($no_hp_tampil) ?>"
+                                    data-keperluan="<?= htmlspecialchars($keperluan_tampil) ?>"
+                                    data-items="<?= htmlspecialchars($row['list_barang_status']) ?>">
+                                🔍 Lihat Rincian
                             </button>
                         </td>
-                        <td class="fw-bold text-success"><?= !empty($row_h['diverifikasi_oleh']) ? htmlspecialchars($row_h['diverifikasi_oleh']) : 'Admin'; ?></td>
+                        <td><?= $status_badge ?></td>
+                        <td class="text-muted fw-bold"><?= !empty($row['diverifikasi_oleh']) ? htmlspecialchars($row['diverifikasi_oleh']) : 'Admin'; ?></td>
                     </tr>
                     <?php 
                         }
                     } else {
-                        echo "<tr><td colspan='6' class='py-5 text-center text-muted'><h5>Belum ada rekaman riwayat peminjaman untuk kategori lab ini.</h5></td></tr>";
+                        echo "<tr><td colspan='6' class='py-5 text-center text-muted'><h5>Tidak ada rekaman data peminjaman pada filter ini.</h5></td></tr>";
                     }
                     ?>
                 </tbody>
@@ -300,12 +239,19 @@ $search = isset($_GET['search']) ? $_GET['search'] : '';
         <div class="modal-dialog modal-dialog-centered modal-md">
             <div class="modal-content" style="border: 2px solid var(--tosca-tua); border-radius: 20px;">
                 <div class="modal-header text-white" style="background-color: var(--tosca-tua); border-top-left-radius: 17px; border-top-right-radius: 17px;">
-                    <h5 class="modal-title fw-bold">📋 Rincian Status Barang per Item</h5>
+                    <h5 class="modal-title fw-bold">📋 Dokumen Log Peminjaman</h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body p-4">
-                    <p class="text-muted fs-6">Siswa: <strong id="detail_nama_peminjam" class="text-dark"></strong></p>
+                    <p class="text-muted fs-6 mb-1">Siswa: <strong id="detail_nama_peminjam" class="text-dark"></strong></p>
+                    <p class="text-muted fs-6 mb-3">Kontak: <strong id="detail_no_hp" class="text-success"></strong></p>
+                    
+                    <div class="p-2 mb-3 rounded-2 small text-dark border bg-light">
+                        <strong>Deskripsi Keperluan:</strong>
+                        <p class="m-0 text-muted" id="detail_keperluan"></p>
+                    </div>
                     <hr>
+                    <strong class="d-block mb-2 small text-secondary">Daftar Item & Status Validasi:</strong>
                     <ul id="container_list_barang" class="list-group list-group-flush fw-bold"></ul>
                 </div>
             </div>
@@ -320,9 +266,13 @@ $search = isset($_GET['search']) ? $_GET['search'] : '';
         tombolDetail.forEach(btn => {
             btn.addEventListener('click', function() {
                 const nama = this.getAttribute('data-peminjam');
+                const noHp = this.getAttribute('data-no-hp');
+                const keperluan = this.getAttribute('data-keperluan');
                 const rawItemsData = this.getAttribute('data-items'); 
                 
                 document.getElementById('detail_nama_peminjam').innerText = nama;
+                document.getElementById('detail_no_hp').innerText = noHp;
+                document.getElementById('detail_keperluan').innerText = keperluan;
                 
                 const container = document.getElementById('container_list_barang');
                 container.innerHTML = ''; 
@@ -337,17 +287,19 @@ $search = isset($_GET['search']) ? $_GET['search'] : '';
                     let badgeHTML = '';
                     if (statusBarang === 'disetujui') {
                         badgeHTML = `<span class="badge bg-success text-white px-2 py-1 rounded-pill" style="font-size:11px;">Dipinjam</span>`;
+                    } else if (statusBarang === 'pending_kembali') {
+                        badgeHTML = `<span class="badge bg-warning text-dark px-2 py-1 rounded-pill" style="font-size:11px;">Proses Kembali</span>`;
                     } else if (statusBarang === 'kembali') {
                         badgeHTML = `<span class="badge bg-primary text-white px-2 py-1 rounded-pill" style="font-size:11px;">Selesai</span>`;
                     } else if (statusBarang === 'ditolak') {
                         badgeHTML = `<span class="badge bg-danger text-white px-2 py-1 rounded-pill" style="font-size:11px;">Ditolak</span>`;
                     } else {
-                        badgeHTML = `<span class="badge bg-warning text-dark px-2 py-1 rounded-pill" style="font-size:11px;">Pending</span>`;
+                        badgeHTML = `<span class="badge bg-secondary text-white px-2 py-1 rounded-pill" style="font-size:11px;">Pending</span>`;
                     }
                     
                     container.innerHTML += `
                         <li class="list-group-item d-flex align-items-center justify-content-between border-bottom py-2 px-1">
-                            <span class="text-secondary">📦 ${namaBarang}</span>
+                            <span class="text-secondary" style="font-size:13px;">📦 ${namaBarang}</span>
                             ${badgeHTML}
                         </li>`;
                 });

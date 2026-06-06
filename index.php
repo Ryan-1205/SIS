@@ -48,7 +48,7 @@ session_start();
                 <div class="col-md-3">
                     <a href="list_barang.php?kat=3" class="card-category">
                         <div class="white-box">
-                            <img src="assets/img/logomm.png" alt="Multimedia">
+                            <img src="assets/img/logodkv.png" alt="DKV">
                         </div>
                         <div class="category-name">
                             Aset <strong>Lab DKV 2</strong>
