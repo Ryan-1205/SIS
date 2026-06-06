@@ -58,7 +58,7 @@ $search = isset($_GET['search']) ? $_GET['search'] : '';
                 <button type="button" id="btnModeHapus" class="btn btn-outline-danger px-4 rounded-pill fw-bold">🗑️ Hapus User</button>
                 <button type="button" form="formBulkDelete" id="btnBulkDelete" class="btn btn-danger px-4 rounded-pill fw-bold d-none">Konfirmasi Hapus (<span id="checkCount">0</span>)</button>
                 <button type="button" id="btnBatalHapus" class="btn btn-secondary px-3 rounded-pill fw-bold d-none">Batal</button>
-                <button type="button" class="btn-admin-action" data-bs-toggle="modal" data-bs-target="#modalTambahUser">+ Tambah User</button>
+                <button type="button" class="btn-admin-action" onclick="bukaModalTambahUser()">+ Tambah User</button>
             </div>
         </div>
 
@@ -76,8 +76,9 @@ $search = isset($_GET['search']) ? $_GET['search'] : '';
                     <tr>
                         <th width="50" class="col-select-master"><input type="checkbox" id="selectAll" class="form-check-input select-all-check"></th>
                         <th class="text-start" style="padding-left: 30px;">NAMA LENGKAP</th>
-                        <th width="250">NOMOR INDUK (NIS / ID)</th>
-                        <th width="250">HAK AKSES / ROLE</th>
+                        <th width="200">NOMOR INDUK (NIS / ID)</th>
+                        <th width="200">HAK AKSES / ROLE</th>
+                        <th width="150">FOTO MASTER AI</th> 
                         <th width="180">AKSI INLINE</th>
                     </tr>
                 </thead>
@@ -100,6 +101,8 @@ $search = isset($_GET['search']) ? $_GET['search'] : '';
                             } else {
                                 $role_badge = '<span class="badge-role badge-siswa">Siswa</span>';
                             }
+
+                            $gambar_wajah = (!empty($row['foto_resmi']) && file_exists("assets/img/" . $row['foto_resmi'])) ? "assets/img/" . $row['foto_resmi'] : "assets/img/default_user.jpg";
                     ?>
                     <tr id="row_<?= $id_u; ?>">
                         <td class="col-select-master">
@@ -127,6 +130,11 @@ $search = isset($_GET['search']) ? $_GET['search'] : '';
                                 <option value="admin" <?= $row['role'] == 'admin' ? 'selected' : '' ?>>Admin Lab</option>
                             </select>
                         </td>
+
+                        <td>
+                            <img src="<?= $gambar_wajah; ?>" alt="Face" class="view-mode" style="width: 40px; height: 40px; object-fit: cover; border-radius: 50px; border: 2px solid var(--tosca-tua);">
+                            <input type="file" class="form-control inline-input edit-mode d-none" id="input_foto_<?= $id_u; ?>" accept="image/*" style="font-size: 11px; max-width: 140px; margin: 0 auto;">
+                        </td>
                         
                         <td>
                             <button type="button" class="btn btn-sm btn-outline-primary px-3 rounded-pill fw-bold view-mode" onclick="aktifkanEditInline(<?= $id_u; ?>)">✏️ Edit</button>
@@ -140,7 +148,7 @@ $search = isset($_GET['search']) ? $_GET['search'] : '';
                     <?php 
                         }
                     } else {
-                        echo "<tr><td colspan='5' style='padding: 30px;' class='text-muted'>Data pengguna tidak ditemukan.</td></tr>";
+                        echo "<tr><td colspan='6' style='padding: 30px;' class='text-muted'>Data pengguna tidak ditemukan.</td></tr>";
                     }
                     ?>
                 </tbody>
@@ -156,7 +164,7 @@ $search = isset($_GET['search']) ? $_GET['search'] : '';
                     <h5 class="modal-title text-white fw-bold">➕ Tambahkan Pengguna Baru</h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                <form action="admin_user_tambah_proses.php" method="POST">
+                <form action="admin_user_tambah_proses.php" method="POST" enctype="multipart/form-data">
                     <div class="modal-body p-4">
                         <div class="mb-3">
                             <label class="form-label fw-bold" style="color: var(--tosca-tua);">Nama Lengkap :</label>
@@ -167,15 +175,15 @@ $search = isset($_GET['search']) ? $_GET['search'] : '';
                             <input type="text" name="nis" class="form-control font-monospace" style="border: 2px solid var(--tosca-tua); border-radius: 10px;" placeholder="Contoh: 2207421034" required>
                         </div>
                         <div class="mb-3">
-                            <label class="form-label fw-bold" style="color: var(--tosca-tua);">Password Akun :</label>
-                            <input type="password" name="password" class="form-control" style="border: 2px solid var(--tosca-tua); border-radius: 10px;" placeholder="Tentukan password awal akun" required>
-                        </div>
-                        <div class="mb-3">
                             <label class="form-label fw-bold" style="color: var(--tosca-tua);">Hak Akses Level :</label>
                             <select name="role" class="form-select" style="border: 2px solid var(--tosca-tua); border-radius: 10px;">
                                 <option value="siswa">Siswa (Akses Katalog & Pinjam)</option>
                                 <option value="admin">Admin Lab (Akses Verifikasi & Inventory)</option>
                             </select>
+                        </div>
+                        <div class="mb-1">
+                            <label class="form-label fw-bold" style="color: var(--tosca-tua);">Foto Wajah Resmi (Master Acuan AI) :</label>
+                            <input type="file" name="foto_resmi" class="form-control" style="border: 2px solid var(--tosca-tua); border-radius: 10px;" accept="image/*" required>
                         </div>
                     </div>
                     <div class="modal-footer border-0 px-4 pb-4">
@@ -187,7 +195,16 @@ $search = isset($_GET['search']) ? $_GET['search'] : '';
         </div>
     </div>
 
+    <script src="assets/bootstrap-5.3.8-dist/js/bootstrap.bundle.min.js"></script>
+
     <script>
+        // Fungsi pemicu modal manual bypass data-bs-toggle crash
+        function bukaModalTambahUser() {
+            const modalElement = document.getElementById('modalTambahUser');
+            const instanceModal = new bootstrap.Modal(modalElement);
+            instanceModal.show();
+        }
+
         // ================== LOGIKA INLINE EDITING USER ==================
         function aktifkanEditInline(id) {
             const row = document.getElementById('row_' + id);
@@ -199,16 +216,27 @@ $search = isset($_GET['search']) ? $_GET['search'] : '';
             const row = document.getElementById('row_' + id);
             row.querySelectorAll('.edit-mode').forEach(el => el.classList.add('d-none'));
             row.querySelectorAll('.view-mode').forEach(el => el.classList.remove('d-none'));
+            document.getElementById('input_foto_' + id).value = '';
         }
 
         function simpanEditInline(id) {
             const namaVal = document.getElementById('input_nama_' + id).value;
             const nisVal  = document.getElementById('input_nis_' + id).value;
             const roleVal = document.getElementById('input_role_' + id).value;
+            const fotoInput = document.getElementById('input_foto_' + id);
+
+            const formData = new FormData();
+            formData.append("id_user", id);
+            formData.append("nama_lengkap", namaVal);
+            formData.append("nis", nisVal);
+            formData.append("role", roleVal);
+            
+            if (fotoInput.files.length > 0) {
+                formData.append("foto_resmi", fotoInput.files[0]);
+            }
 
             const xhr = new XMLHttpRequest();
             xhr.open("POST", "admin_user_edit_inline_proses.php", true);
-            xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
             
             xhr.onreadystatechange = function() {
                 if (xhr.readyState === 4 && xhr.status === 200) {
@@ -219,7 +247,7 @@ $search = isset($_GET['search']) ? $_GET['search'] : '';
                     }
                 }
             };
-            xhr.send("id_user=" + id + "&nama_lengkap=" + encodeURIComponent(namaVal) + "&nis=" + encodeURIComponent(nisVal) + "&role=" + encodeURIComponent(roleVal));
+            xhr.send(formData);
         }
 
         // ================== LOGIKA MODE BULK DELETE USER ==================
@@ -288,6 +316,5 @@ $search = isset($_GET['search']) ? $_GET['search'] : '';
     </script>
 
     <?php include 'footer.php'; ?>
-
 </body>
 </html>

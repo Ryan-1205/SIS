@@ -5,6 +5,18 @@ session_start();
 // Pastikan user sudah login untuk mengambil data antrean pribadinya
 $id_user_login = isset($_SESSION['id_user']) ? $_SESSION['id_user'] : 0;
 
+// ================= AMBIL FOTO MASTER USER DARI DATABASE SECARA REALTIME =================
+$foto_master_db = "default_user.jpg"; 
+if ($id_user_login > 0) {
+    $query_user = mysqli_query($conn, "SELECT foto_resmi FROM users WHERE id_user = '$id_user_login'");
+    if ($row_user = mysqli_fetch_assoc($query_user)) {
+        if (!empty($row_user['foto_resmi']) && file_exists("assets/img/" . $row_user['foto_resmi'])) {
+            $foto_master_db = $row_user['foto_resmi'];
+        }
+    }
+}
+// =======================================================================================
+
 // Inisialisasi keranjang jika belum ada
 if (!isset($_SESSION['keranjang'])) {
     $_SESSION['keranjang'] = [];
@@ -76,6 +88,9 @@ if (isset($_SERVER['HTTP_REFERER'])) {
         }
         .status-pending { background-color: #ffeaa7; color: #e67e22; }
         .status-approved { background-color: #d4edda; color: #155724; }
+        
+        /* Box Webcam yang disembunyikan di awal */
+        .webcam-section { display: none; }
     </style>
 </head>
 <body>
@@ -240,7 +255,7 @@ if (isset($_SERVER['HTTP_REFERER'])) {
                     </tbody>
                 </table>
             </div>
-            </div>
+        </div>
 
         <div class="fixed-bottom action-footer" style="background-color: var(--tosca-tua, #1e6f65); height: 70px;">
             <div class="safe-container d-flex align-items-center justify-content-between px-3 h-100">
@@ -259,48 +274,61 @@ if (isset($_SERVER['HTTP_REFERER'])) {
                         <button type="button" class="btn btn-light fw-bold px-4 py-2 rounded-3" style="color: var(--tosca-tua) !important;" onclick="bukaModalTanggal()">
                             Pinjam Sekarang
                         </button>
-                    <?php else: ?>
-                        <button type="button" class="btn btn-light fw-bold px-4 py-2 rounded-3 disabled" style="opacity: 0.5;">
-                            Pinjam Sekarang
-                        </button>
                     <?php endif; ?>
                 </div>
             </div>
         </div>
 
-        <div class="modal fade" id="modalInputTanggal" tabindex="-1" aria-hidden="true">
-            <div class="modal-dialog modal-dialog-centered">
+        <div class="modal fade" id="modalInputTanggal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+            <div class="modal-dialog modal-dialog-centered modal-md">
                 <div class="modal-content" style="border: 2px solid var(--tosca-tua); border-radius: 20px;">
                     <div class="modal-header" style="background-color: var(--tosca-tua); border-top-left-radius: 17px; border-top-right-radius: 17px;">
                         <h5 class="modal-title text-white fw-bold">📅 Formulir Kelengkapan Pinjam</h5>
-                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                        <button type="button" id="btnXCloseModal" class="btn-close btn-close-white" onclick="kembaliKeFormulirAtauTutup()"></button>
                     </div>
                     <div class="modal-body p-4">
-                        <p class="text-muted small mb-3">Silakan tentukan tanggal pemakaian aset lab beserta data kontak operasional lu lek.</p>
-                        
-                        <div class="mb-3">
-                            <label class="form-label fw-bold" style="color: var(--tosca-tua);">Tanggal Mulai Pinjam :</label>
-                            <input type="date" name="tgl_pinjam" id="modal_tgl_pinjam" class="form-control" style="border: 2px solid var(--tosca-tua); border-radius: 10px;" required>
-                        </div>
-                        
-                        <div class="mb-3">
-                            <label class="form-label fw-bold" style="color: var(--tosca-tua);">Rencana Tanggal Kembali :</label>
-                            <input type="date" name="tgl_kembali_rencana" id="modal_tgl_kembali" class="form-control" style="border: 2px solid var(--tosca-tua); border-radius: 10px;" required>
+                        <div id="formFieldsContainer">
+                            <p class="text-muted small mb-3">Silakan tentukan tanggal pemakaian aset lab beserta data kontak operasional.</p>
+                            
+                            <div class="mb-3">
+                                <label class="form-label fw-bold" style="color: var(--tosca-tua);">Tanggal Mulai Pinjam :</label>
+                                <input type="date" name="tgl_pinjam" id="modal_tgl_pinjam" class="form-control" style="border: 2px solid var(--tosca-tua); border-radius: 10px;" required>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label fw-bold" style="color: var(--tosca-tua);">Rencana Tanggal Kembali :</label>
+                                <input type="date" name="tgl_kembali_rencana" id="modal_tgl_kembali" class="form-control" style="border: 2px solid var(--tosca-tua); border-radius: 10px;" required>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label fw-bold" style="color: var(--tosca-tua);">No. Handphone / WhatsApp Aktif :</label>
+                                <input type="text" name="no_hp" id="modal_no_hp" placeholder="Contoh: 081234567xxx" class="form-control" style="border: 2px solid var(--tosca-tua); border-radius: 10px;" required>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label fw-bold" style="color: var(--tosca-tua);">Deskripsi Keperluan Meminjam :</label>
+                                <textarea name="keperluan" id="modal_keperluan" rows="2" placeholder="Sebutkan alasan penggunaan aset ini..." class="form-control" style="border: 2px solid var(--tosca-tua); border-radius: 10px;" required></textarea>
+                            </div>
                         </div>
 
-                        <div class="mb-3">
-                            <label class="form-label fw-bold" style="color: var(--tosca-tua);">No. Handphone / WhatsApp Aktif :</label>
-                            <input type="text" name="no_hp" id="modal_no_hp" placeholder="Contoh: 081234567xxx" class="form-control" style="border: 2px solid var(--tosca-tua); border-radius: 10px;" required>
+                        <div id="webcamSection" class="webcam-section mb-2 text-center">
+                            <label class="form-label d-block fw-bold" style="color: var(--tosca-tua);">Pindai Wajah Anda (Validasi Akhir) :</label>
+                            <div style="position: relative; width: 320px; height: 240px; margin: 0 auto; background: #000; border-radius: 12px; overflow: hidden; border: 2px solid var(--tosca-tua);">
+                                <video id="webcam" autoplay muted width="320" height="240" style="position: absolute; left:0; top:0; width: 100%; height: 100%; object-fit: cover; z-index: 1;"></video>
+                                
+                                <canvas id="previewFoto" style="position: absolute; left:0; top:0; width: 100%; height: 100%; object-fit: cover; z-index: 3; display: none;"></canvas>
+                                
+                                <div id="scanStatus" class="text-white p-2 d-flex align-items-center justify-content-center text-center" style="position: absolute; width:100%; height:100%; background: rgba(0,0,0,0.75); font-size: 13px; left:0; top:0; z-index: 5;">
+                                    Memuat Sistem Kecerdasan AI Wajah...
+                                </div>
+                            </div>
                         </div>
 
-                        <div class="mb-3">
-                            <label class="form-label fw-bold" style="color: var(--tosca-tua);">Deskripsi Keperluan Meminjam :</label>
-                            <textarea name="keperluan" id="modal_keperluan" rows="2" placeholder="Sebutkan alasan penggunaan aset ini..." class="form-control" style="border: 2px solid var(--tosca-tua); border-radius: 10px;" required></textarea>
-                        </div>
+                        <input type="hidden" name="snapshot_wajah" id="snapshot_wajah">
                     </div>
                     <div class="modal-footer border-0 px-4 pb-4">
-                        <button type="button" class="btn btn-secondary rounded-pill px-4" data-bs-dismiss="modal">Batal</button>
-                        <button type="button" class="btn text-white rounded-pill px-4" style="background-color: var(--tosca-tua);" onclick="validasiDanKirimForm()">Kirim Pengajuan</button>
+                        <button type="button" id="btnBatalModal" class="btn btn-secondary rounded-pill px-4" onclick="kembaliKeFormulirAtauTutup()">Batal</button>
+                        <button type="button" id="btnLanjutVerifikasi" class="btn text-white rounded-pill px-4" style="background-color: var(--tosca-tua);" onclick="validasiFormDanLanjutScan()">Kirim Pengajuan</button>
                     </div>
                 </div>
             </div>
@@ -330,9 +358,9 @@ if (isset($_SERVER['HTTP_REFERER'])) {
 
     <script src="assets/bootstrap-5.3.8-dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="assets/js/face-api.min.js"></script>
     
     <script>
-        // LOGIKA MODAL HAPUS ITEM KERANJANG
         const tombolHapus = document.querySelectorAll('.tombol-hapus');
         const modalHapusBS = new bootstrap.Modal(document.getElementById('modalKonfirmasiHapus'));
 
@@ -346,95 +374,205 @@ if (isset($_SERVER['HTTP_REFERER'])) {
             });
         });
 
-        // LOGIKA INTERAKSI MODAL INPUT TANGGAL + INPUT BARU
+        // ================= LOGIKA UTAMA INTEGRASI FACE SCANNER =================
         const modalTanggalBS = new bootstrap.Modal(document.getElementById('modalInputTanggal'));
+        let streamWebcam = null;
+        let intervalScan = null;
 
         function bukaModalTanggal() {
             const hariIni = new Date().toISOString().split('T')[0];
             document.getElementById('modal_tgl_pinjam').min = hariIni;
             document.getElementById('modal_tgl_kembali').min = hariIni;
+            
+            document.getElementById('formFieldsContainer').style.display = 'block';
+            document.getElementById('webcamSection').style.display = 'none';
+            
+            document.querySelector('#modalInputTanggal .modal-title').innerText = "📅 Formulir Kelengkapan Pinjam";
+            document.getElementById('btnLanjutVerifikasi').style.display = 'inline-block';
+            document.getElementById('btnXCloseModal').style.display = 'inline-block';
+            
+            const btnBatal = document.getElementById('btnBatalModal');
+            btnBatal.innerText = "Batal";
+            btnBatal.className = "btn btn-secondary rounded-pill px-4";
+            
             modalTanggalBS.show();
         }
 
-        function validasiDanKirimForm() {
+        function kembaliKeFormulirAtauTutup() {
+            const sectionKamera = document.getElementById('webcamSection');
+            
+            if (sectionKamera.style.display === 'block') {
+                stopWebcam();
+                document.getElementById('formFieldsContainer').style.display = 'block';
+                sectionKamera.style.display = 'none';
+                document.getElementById('btnLanjutVerifikasi').style.display = 'inline-block';
+                document.querySelector('#modalInputTanggal .modal-title').innerText = "📅 Formulir Kelengkapan Pinjam";
+                
+                const btnBatal = document.getElementById('btnBatalModal');
+                btnBatal.innerText = "Batal";
+                btnBatal.className = "btn btn-secondary rounded-pill px-4";
+            } else {
+                stopWebcam();
+                modalTanggalBS.hide();
+            }
+        }
+
+        function validasiFormDanLanjutScan() {
             const tglPinjam = document.getElementById('modal_tgl_pinjam').value;
             const tglKembali = document.getElementById('modal_tgl_kembali').value;
             const noHp = document.getElementById('modal_no_hp').value.trim();
             const keperluan = document.getElementById('modal_keperluan').value.trim();
 
-            // REVISI VALIDASI: Memastikan semua kolom wajib terisi penuh
             if (tglPinjam === "" || tglKembali === "" || noHp === "" || keperluan === "") {
-                Swal.fire({
-                    title: '⚠️ Input Belum Lengkap',
-                    text: 'Mohon lengkapi Tanggal, No. HP, dan Deskripsi Keperluan!',
-                    icon: 'warning',
-                    confirmButtonColor: '#1e6f65'
-                });
+                Swal.fire({ title: '⚠️ Input Belum Lengkap', text: 'Mohon lengkapi Tanggal, No. HP, dan Deskripsi Keperluan!', icon: 'warning', confirmButtonColor: '#1e6f65' });
                 return;
             }
 
             if (new Date(tglKembali) < new Date(tglPinjam)) {
-                Swal.fire({
-                    title: '❌ Logika Tanggal Salah',
-                    text: 'Rencana tanggal pengembalian tidak boleh mendahului tanggal mulai meminjam.',
-                    icon: 'error',
-                    confirmButtonColor: '#1e6f65'
-                });
+                Swal.fire({ title: '❌ Logika Tanggal Salah', text: 'Rencana tanggal pengembalian tidak boleh mendahului tanggal mulai meminjam.', icon: 'error', confirmButtonColor: '#1e6f65' });
                 return;
             }
 
-            document.getElementById('formPinjam').submit();
+            document.getElementById('formFieldsContainer').style.display = 'none';
+            document.getElementById('btnLanjutVerifikasi').style.display = 'none';
+            document.getElementById('btnXCloseModal').style.display = 'none';
+            
+            const btnBatal = document.getElementById('btnBatalModal');
+            btnBatal.innerText = "🔄 Kembali";
+            btnBatal.className = "btn btn-warning rounded-pill px-4 fw-bold text-dark";
+            
+            document.querySelector('#modalInputTanggal .modal-title').innerText = "🔒 Verifikasi Wajah Pemilik Akun";
+            document.getElementById('webcamSection').style.display = 'block';
+            document.getElementById('scanStatus').innerText = "Memuat Sistem Kecerdasan AI Wajah... 🛡️";
+
+            startWebcam();
         }
 
-        // Pembacaan URL Params
+        function startWebcam() {
+            const video = document.getElementById('webcam');
+            navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } })
+                .then(stream => {
+                    streamWebcam = stream;
+                    video.srcObject = stream;
+                    initFaceAPI(); 
+                })
+                .catch(err => {
+                    Swal.fire({ title: '❌ Kamera Gagal', text: 'Izin kamera ditolak atau hardware tidak ditemukan.', icon: 'error', confirmButtonColor: '#1e6f65' }).then(() => {
+                        window.location.reload();
+                    });
+                });
+        }
+
+        function stopWebcam() {
+            if (intervalScan) clearInterval(intervalScan);
+            if (streamWebcam) {
+                streamWebcam.getTracks().forEach(track => track.stop());
+            }
+        }
+
+        async function initFaceAPI() {
+            const statusDiv = document.getElementById('scanStatus');
+            try {
+                await faceapi.nets.ssdMobilenetv1.loadFromUri('assets/models');
+                await faceapi.nets.faceLandmark68Net.loadFromUri('assets/models');
+                await faceapi.nets.faceRecognitionNet.loadFromUri('assets/models');
+                
+                statusDiv.innerText = "Mencari & mengunci wajah depan kamera...";
+                statusDiv.style.background = "rgba(0,0,0,0.75)";
+
+                const namaFileMaster = "<?= $foto_master_db; ?>";
+                const imgReference = await faceapi.fetchImage('assets/img/' + namaFileMaster);
+                
+                const refDescriptor = await faceapi.detectSingleFace(imgReference).withFaceLandmarks().withFaceDescriptor();
+
+                if (!refDescriptor) {
+                    statusDiv.innerHTML = "<span class='text-danger fw-bold'>❌ Foto Master Akun di DB Terlalu Buram! Hubungi Admin Lab.</span>";
+                    return;
+                }
+
+                const faceMatcher = new faceapi.FaceMatcher(refDescriptor, 0.5);
+                const video = document.getElementById('webcam');
+                const canvasPreview = document.getElementById('previewFoto');
+                
+                video.style.display = "block";
+                canvasPreview.style.display = "none";
+
+                intervalScan = setInterval(async () => {
+                    if (video.paused || video.ended) return;
+                    
+                    const detections = await faceapi.detectSingleFace(video).withFaceLandmarks().withFaceDescriptor();
+                    
+                    if (detections) {
+                        const match = faceMatcher.findBestMatch(detections.descriptor);
+                        
+                        if (match.label !== 'unknown') {
+                            // JIKA COCOK (VALID): Matikan sensor interval tracking
+                            clearInterval(intervalScan);
+
+                            const vidWidth = video.videoWidth;
+                            const vidHeight = video.videoHeight;
+
+                            if (vidWidth > 0 && vidHeight > 0) {
+                                canvasPreview.width = vidWidth;
+                                canvasPreview.height = vidHeight;
+                                
+                                const ctx = canvasPreview.getContext('2d');
+                                ctx.drawImage(video, 0, 0, vidWidth, vidHeight);
+                                
+                                const dataURL = canvasPreview.toDataURL('image/jpeg', 0.9);
+                                document.getElementById('snapshot_wajah').value = dataURL;
+                            }
+
+                            video.style.display = "none";
+                            canvasPreview.style.display = "block";
+
+                            canvasPreview.style.zIndex = "4"; 
+                            statusDiv.style.zIndex = "5"; 
+                            statusDiv.style.background = "transparent"; 
+
+                            statusDiv.innerHTML = "<div class='text-white fw-bold px-4 py-2 rounded-pill shadow-sm' style='background: #1e6f65; position: absolute; bottom: 15px;'>✅ Wajah Terverifikasi! Mengirimkan Berkas...</div>";
+                            document.getElementById('btnBatalModal').classList.add('d-none');
+
+                            if (streamWebcam) {
+                                streamWebcam.getTracks().forEach(track => track.stop());
+                            }
+
+                            setTimeout(() => {
+                                document.getElementById('formPinjam').submit();
+                            }, 1200);
+
+                        } else {
+                            // FIX: REVISI LOGIKA WAJAH SALAH -> Kamera tetap live, latar belakang mencair jadi badge floating merah di bawah
+                            statusDiv.style.background = "transparent";
+                            statusDiv.innerHTML = "<div class='text-white fw-bold px-3 py-1 rounded-pill shadow-sm' style='background: rgba(220, 53, 69, 0.85); position: absolute; bottom: 10px; font-size: 11px; z-index: 6;'>❌ Wajah Tidak Sesuai Pemilik Akun!</div>";
+                        }
+                    } else {
+                        // Jika wajah keluar frame total, kembalikan lapisan penutup hitam beralur
+                        statusDiv.style.background = "rgba(0,0,0,0.75)";
+                        statusDiv.innerHTML = "<span class='text-warning fw-bold'>⚠️ Wajah tidak terdeteksi. Hadapkan muka lurus ke kamera.</span>";
+                    }
+                }, 400);
+
+            } catch (error) {
+                console.error(error);
+                statusDiv.innerText = "Gagal memuat model berkas face-api lokal.";
+            }
+        }
+
         const urlParams = new URLSearchParams(window.location.search);
         const statusParam = urlParams.get('status');
 
         if (statusParam === 'sukses') {
-            Swal.fire({
-                title: 'Berhasil Terpilih!',
-                text: 'Barang masuk ke daftar pinjam.',
-                icon: 'success',
-                confirmButtonColor: '#1e6f65',
-                timer: 2500,
-                timerProgressBar: true
-            }).then(() => {
-                window.history.replaceState({}, document.title, window.location.pathname);
-            });
+            Swal.fire({ title: 'Berhasil Terpilih!', text: 'Barang masuk ke daftar pinjam.', icon: 'success', confirmButtonColor: '#1e6f65', timer: 2500, timerProgressBar: true }).then(() => { window.history.replaceState({}, document.title, window.location.pathname); });
         }
-
         if (statusParam === 'ada') {
-            Swal.fire({
-                title: 'Sudah Dipilih!',
-                text: 'Barang ini sudah ada di dalam daftar pinjam lu, Lek.',
-                icon: 'info',
-                confirmButtonColor: '#1e6f65',
-                timer: 2500,
-                timerProgressBar: true
-            }).then(() => {
-                window.history.replaceState({}, document.title, window.location.pathname);
-            });
+            Swal.fire({ title: 'Sudah Dipilih!', text: 'Barang ini sudah ada di dalam daftar pinjam lu, Lek.', icon: 'info', confirmButtonColor: '#1e6f65', timer: 2500, timerProgressBar: true }).then(() => { window.history.replaceState({}, document.title, window.location.pathname); });
         }
-
         if (statusParam === 'sukses_pinjam') {
             const jumlah = urlParams.get('count');
-            Swal.fire({
-                title: 'Pengajuan Sukses!',
-                text: 'Berhasil mengirimkan ' + jumlah + ' pengajuan aset ke antrean verifikasi admin.',
-                icon: 'success',
-                confirmButtonColor: '#1e6f65'
-            }).then(() => {
-                window.history.replaceState({}, document.title, window.location.pathname);
-            });
+            Swal.fire({ title: 'Pengajuan Sukses!', text: 'Berhasil mengirimkan ' + jumlah + ' pengajuan aset ke antrean verifikasi admin.', icon: 'success', confirmButtonColor: '#1e6f65' }).then(() => { window.history.replaceState({}, document.title, window.location.pathname); });
         } else if (statusParam === 'gagal_pinjam') {
-            Swal.fire({
-                title: 'Gagal!',
-                text: 'Gagal memproses pengajuan ke database.',
-                icon: 'error',
-                confirmButtonColor: '#1e6f65'
-            }).then(() => {
-                window.history.replaceState({}, document.title, window.location.pathname);
-            });
+            Swal.fire({ title: 'Gagal!', text: 'Gagal memproses pengajuan ke database.', icon: 'error', confirmButtonColor: '#1e6f65' }).then(() => { window.history.replaceState({}, document.title, window.location.pathname); });
         }
     </script>
 </body>
