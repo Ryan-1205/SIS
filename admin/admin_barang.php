@@ -63,7 +63,9 @@ $total_halaman = ceil($total_data / $limit);
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Admin <?= $nama_lab_tampil; ?> - Data Barang</title>
+    <title>SIS - Sixseven Inventory System</title>
+    <link rel="icon" type="image/png" href="../assets/img/logo/smk.png">
+
     <link rel="stylesheet" href="../assets/bootstrap-5.3.8-dist/css/bootstrap.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="../assets/css/style.css?v=2.5">
@@ -165,7 +167,7 @@ $total_halaman = ceil($total_data / $limit);
         </div>
 
         <div class="admin-table-wrapper">
-            <form action="admin_barang_hapus_massal.php" method="POST" id="formBulkDelete">
+            <form action="admin_barang_hapus_massal.php?limit=<?= $limit ?>&filter_kat=<?= $filter_kategori ?>&search=<?= urlencode($search) ?>" method="POST" id="formBulkDelete">
             <table class="admin-table">
                 <thead>
                     <tr>
@@ -236,11 +238,11 @@ $total_halaman = ceil($total_data / $limit);
                                 $gambar_tampil = "../assets/img/barang/" . $row['foto'];
                             } else {
                                 switch ($row['id_kategori']) {
-                                    case 1: $gambar_tampil = "../assets/img/logoberangkat.png"; break;
-                                    case 2: $gambar_tampil = "../assets/img/logodkv.png"; break;
-                                    case 3: $gambar_tampil = "../assets/img/logodkv.png"; break;
-                                    case 4: $gambar_tampil = "../assets/img/logoanm.png"; break;
-                                    default: $gambar_tampil = "../assets/img/logoberangkat.png"; break;
+                                    case 1: $gambar_tampil = "../assets/img/logo/logoberangkat.png"; break;
+                                    case 2: $gambar_tampil = "../assets/img/logo/logodkv.png"; break;
+                                    case 3: $gambar_tampil = "../assets/img/logo/logodkv.png"; break;
+                                    case 4: $gambar_tampil = "../assets/img/logo/logoanm.png"; break;
+                                    default: $gambar_tampil = "../assets/img/logo/logoberangkat.png"; break;
                                 }
                             }
                     ?>
@@ -350,7 +352,7 @@ $total_halaman = ceil($total_data / $limit);
                     <h5 class="modal-title text-white fw-bold">Tambah Aset Baru</h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                <form action="admin_barang_tambah_proses.php" method="POST" enctype="multipart/form-data">
+                <form action="admin_barang_tambah_proses.php?limit=<?= $limit ?>&filter_kat=<?= $filter_kategori ?>&search=<?= urlencode($search) ?>" method="POST" enctype="multipart/form-data">
                     <div class="modal-body p-4">
                         <input type="hidden" name="id_kategori" value="<?= ($id_kategori_admin == 0) ? 1 : $id_kategori_admin; ?>">
                         

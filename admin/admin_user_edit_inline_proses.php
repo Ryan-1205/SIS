@@ -36,7 +36,6 @@ if (isset($_POST['id_user'])) {
         // Pindahkan file dari temp_name ke folder assets/img
         if (move_uploaded_file($file_foto['tmp_name'], $target_path)) {
             // Jika berhasil upload foto baru, hapus berkas fisik foto lama (kecuali gambar default)
-            // 🔥 FIX JALUR: Tambahkan ../ pada fungsi pengecekan file_exists dan unlink
             if (!empty($foto_lama) && file_exists("../assets/img/pengguna/" . $foto_lama)) {
                 if ($foto_lama != "default_user.jpg") {
                     unlink("../assets/img/pengguna/" . $foto_lama); // Hapus berkas lama biar hosting gak penuh
@@ -45,7 +44,7 @@ if (isset($_POST['id_user'])) {
         }
     }
 
-    // 3. EKSEKUSI DATA PEMBARUAN TOTAL (TEKS + FOTO) KE DATABASE
+    // 3. EKSEKUSI DATA PEMBARUAN TOTAL DENGAN PROTEKSI TRY-CATCH (EXCEPTION HANDLER)
     $query = "UPDATE users 
               SET nama_lengkap = '$nama', 
                   nis = '$nis', 
@@ -53,10 +52,19 @@ if (isset($_POST['id_user'])) {
                   foto_resmi = '$foto_nama_baru' 
               WHERE id_user = '$id'";
 
-    if (mysqli_query($conn, $query)) {
-        echo "success"; // Kirim respon sukses ke JavaScript AJAX agar halaman otomatis reload
-    } else {
-        echo "error_database: " . mysqli_error($conn);
+    try {
+        if (mysqli_query($conn, $query)) {
+            echo "success"; // Kirim respon sukses ke JavaScript AJAX agar halaman otomatis reload
+        } else {
+            echo "Gagal memperbarui data pengguna.";
+        }
+    } catch (mysqli_sql_exception $e) {
+        // Memeriksa kode error MySQL untuk entri duplikat (Error Code: 1062)
+        if ($e->getCode() == 1062) {
+            echo "duplicate_entry"; 
+        } else {
+            echo "error_database: " . $e->getMessage();
+        }
     }
 } else {
     echo "error_parameter";

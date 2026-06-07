@@ -61,7 +61,8 @@ $total_halaman = ceil($total_data / $limit);
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?= $judul_halaman; ?></title>
+    <title>SIS - Sixseven Inventory System</title>
+    <link rel="icon" type="image/png" href="../assets/img/logo/smk.png">
     
     <link rel="stylesheet" href="../assets/bootstrap-5.3.8-dist/css/bootstrap.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
@@ -150,11 +151,11 @@ $total_halaman = ceil($total_data / $limit);
                         $gambar_tampil = "../assets/img/barang/" . $row['foto'];
                     } else {
                         switch ($kategori_barang) {
-                            case 1: $gambar_tampil = "../assets/img/logoberangkat.png"; break;
-                            case 2: $gambar_tampil = "../assets/img/logodkv.png"; break;
-                            case 3: $gambar_tampil = "../assets/img/logodkv.png"; break;
-                            case 4: $gambar_tampil = "../assets/img/logoanm.png"; break;
-                            default: $gambar_tampil = "../assets/img/logoberangkat.png"; break;
+                            case 1: $gambar_tampil = "../assets/img/logo/logoberangkat.png"; break;
+                            case 2: $gambar_tampil = "../assets/img/logo/logodkv.png"; break;
+                            case 3: $gambar_tampil = "../assets/img/logo/logodkv.png"; break;
+                            case 4: $gambar_tampil = "../assets/img/logo/logoanm.png"; break;
+                            default: $gambar_tampil = "../assets/img/logo/logoberangkat.png"; break;
                         }
                     }
             ?>

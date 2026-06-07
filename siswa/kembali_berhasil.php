@@ -1,4 +1,4 @@
-<?php
+<?php 
 session_start();
 // Mengatur zona waktu agar fungsi date() mengambil waktu WIB secara akurat
 date_default_timezone_set('Asia/Jakarta');
@@ -12,7 +12,6 @@ if (!isset($_SESSION['id_user'])) {
     exit;
 }
 
-$id_ref = isset($_GET['id_ref']) ? $_GET['id_ref'] : '0000000';
 $pengawas_tampil = isset($_GET['pengawas']) ? $_GET['pengawas'] : '-';
 
 // SINKRONISASI FORMAT WAKTU: Menampilkan tanggal dan jam penyerahan secara aktual
@@ -23,7 +22,9 @@ $tanggal_aktual = date('d F Y, H:i') . " WIB";
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pengembalian Diajukan - SIS</title>
+    <title>SIS - Sixseven Inventory System</title>
+    <link rel="icon" type="image/png" href="../assets/img/logo/smk.png">
+
     <link rel="stylesheet" href="../assets/bootstrap-5.3.8-dist/css/bootstrap.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="../assets/css/style.css?v=1.5">
@@ -46,9 +47,9 @@ $tanggal_aktual = date('d F Y, H:i') . " WIB";
             
             <div class="mx-auto p-3 mb-4 rounded-3 text-start" style="max-width: 440px; background-color: #f8faf9; border: 1px solid #c4e1db;">
                 <div class="row g-0 mb-2 align-items-center">
-                    <div class="col-5 fw-bold text-secondary" style="font-size: 14px;">Nomor Referensi</div>
+                    <div class="col-5 fw-bold text-secondary" style="font-size: 14px;">Nama Penerima</div>
                     <div class="col-1 text-center text-muted">:</div>
-                    <div class="col-6 font-monospace fw-bold text-dark text-break" style="font-size: 14px; letter-spacing: 0.5px;"><?= htmlspecialchars($id_ref) ?></div>
+                    <div class="col-6 fw-bold text-dark text-break" style="font-size: 14px;"><?= htmlspecialchars($pengawas_tampil) ?></div>
                 </div>
                 <div class="row g-0 mb-2 align-items-center">
                     <div class="col-5 fw-bold text-secondary" style="font-size: 14px;">Waktu Serah</div>
@@ -56,20 +57,19 @@ $tanggal_aktual = date('d F Y, H:i') . " WIB";
                     <div class="col-6 fw-bold text-dark" style="font-size: 14px;"><?= htmlspecialchars($tanggal_aktual) ?></div>
                 </div>
                 <div class="row g-0 align-items-center">
-                    <div class="col-5 fw-bold text-secondary" style="font-size: 14px;">Target Penerima</div>
+                    <div class="col-5 fw-bold text-secondary" style="font-size: 14px;">Status Berkas</div>
                     <div class="col-1 text-center text-muted">:</div>
-                    <div class="col-6 fw-bold style-color" style="font-size: 14px; color: var(--tosca-tua);"><?= htmlspecialchars($pengawas_tampil) ?></div>
+                    <div class="col-6 fw-bold" style="font-size: 14px; color: #e67e22;">Menunggu Verifikasi</div>
                 </div>
             </div>
 
             <p class="mb-4 text-muted" style="font-size: 13.5px; line-height: 1.6; padding: 0 10px;">
-                Silakan bawa dan serahkan aset fisik barang langsung ke ruangan laboratorium tempat meminjam. Pastikan <strong><?= htmlspecialchars($pengawas_tampil); ?></strong> atau pengawas piket aktif memeriksa kecocokan data dan kelayakan barang untuk merilis tanggungan pinjaman Anda.
+                Silakan bawa dan serahkan aset fisik barang langsung ke ruangan laboratorium tempat meminjam. Pastikan <strong><?= htmlspecialchars($pengawas_tampil); ?></strong> atau pengawas piket aktif memeriksa kecocokan data dan kelayakan barang untuk merilis tanggungan peminjaman Anda.
             </p>
 
             <div class="d-flex justify-content-between gap-3 mt-4 px-2">
                 <a href="../index.php" class="btn text-white fw-bold py-2 w-50 rounded-pill shadow-sm" style="background-color: var(--tosca-tua); font-size: 14px;">Katalog Utama</a>
-                
-                <a href="list_kembali.php" class="btn btn-outline-secondary fw-bold py-2 w-50 rounded-pill" style="font-size: 14px;">Daftar Kembali</a>
+                <a href="list_pinjam.php" class="btn btn-outline-secondary fw-bold py-2 w-50 rounded-pill" style="font-size: 14px;">Daftar Peminjaman</a>
             </div>
         </div>
     </div>

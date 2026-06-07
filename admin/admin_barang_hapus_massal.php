@@ -1,16 +1,24 @@
-<?php
+<?php 
 session_start();
 // Penyesuaian Jalur: Mundur satu folder untuk memuat konfigurasi database
 include '../koneksi.php';
 
-// Validasi hak akses admin berdasarkan awalan kata 'admin_' pada role session
-if (!isset($_SESSION['id_user']) || strpos($_SESSION['role'], 'admin_') === false) {
+// 🔥 FIX VALIDASI AKSES: Menggunakan kata 'admin' tanpa underscore agar adminsuper (role: admin) lolos keamanan
+if (!isset($_SESSION['id_user']) || strpos($_SESSION['role'], 'admin') === false) {
     header("Location: ../login.php");
     exit;
 }
 
 $status_hapus = '';
 $jumlah_sukses = 0;
+
+// 🔥 TANGKAP DATA STATE FILTER HALAMAN SEBELUMNYA (Agar pagination & pencarian tidak hilang setelah hapus)
+$limit = isset($_GET['limit']) ? (int)$_GET['limit'] : 10;
+$filter_kategori = isset($_GET['filter_kat']) ? $_GET['filter_kat'] : 'all';
+$search = isset($_GET['search']) ? $_GET['search'] : '';
+
+// Buat query string pelengkap URL kembalian
+$url_params = "?limit=" . $limit . "&filter_kat=" . $filter_kategori . "&search=" . urlencode($search);
 
 // Memastikan ada data barang yang dikirim melalui checkbox form
 if (isset($_POST['id_barang_pilihan']) && is_array($_POST['id_barang_pilihan'])) {
@@ -29,10 +37,10 @@ if (isset($_POST['id_barang_pilihan']) && is_array($_POST['id_barang_pilihan']))
         if ($data_foto && !empty($data_foto['foto'])) {
             $nama_foto = $data_foto['foto'];
             // Penyesuaian Jalur: Memeriksa dan menghapus file foto fisik dari folder yang tepat
-            if (file_exists("../assets/img/" . $nama_foto)) {
+            if (file_exists("../assets/img/barang" . $nama_foto)) {
                 // Proteksi gambar logo bawaan sistem agar tidak ikut terhapus
                 if (!in_array($nama_foto, ["logoberangkat.png", "logodkv.png", "logomm.png", "logoanm.png"])) {
-                    unlink("../assets/img/" . $nama_foto);
+                    unlink("../assets/img/barang" . $nama_foto);
                 }
             }
         }
@@ -85,7 +93,7 @@ if (isset($_POST['id_barang_pilihan']) && is_array($_POST['id_barang_pilihan']))
                     <p class="text-muted mb-0">Sistem berhasil menghapus sebanyak <strong><?= $jumlah_sukses; ?></strong> data aset barang dari database.</p>
                 </div>
                 <div class="modal-footer justify-content-center border-0 pb-4">
-                    <a href="admin_barang.php" class="btn btn-danger-custom text-decoration-none">Selesai</a>
+                    <a href="admin_barang.php<?= $url_params; ?>" class="btn btn-danger-custom text-decoration-none">Selesai</a>
                 </div>
             </div>
         </div>
@@ -103,7 +111,7 @@ if (isset($_POST['id_barang_pilihan']) && is_array($_POST['id_barang_pilihan']))
                     <p class="text-muted mb-0">Tidak ada parameter data aset barang yang dipilih untuk dilakukan proses penghapusan.</p>
                 </div>
                 <div class="modal-footer justify-content-center border-0 pb-4">
-                    <a href="admin_barang.php" class="btn btn-warning-custom text-decoration-none">Kembali</a>
+                    <a href="admin_barang.php<?= $url_params; ?>" class="btn btn-warning-custom text-decoration-none">Kembali</a>
                 </div>
             </div>
         </div>

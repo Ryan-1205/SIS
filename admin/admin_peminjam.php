@@ -73,7 +73,8 @@ $total_halaman = ceil($total_data / $limit);
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Admin <?= $nama_lab_tampil; ?> - Data Peminjam</title>
+    <title>SIS - Sixseven Inventory System</title>
+    <link rel="icon" type="image/png" href="../assets/img/logo/smk.png">
     <link rel="stylesheet" href="../assets/bootstrap-5.3.8-dist/css/bootstrap.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="../assets/css/style.css?v=2.7">
@@ -225,6 +226,7 @@ $total_halaman = ceil($total_data / $limit);
                         $query_sql = "SELECT peminjaman.tgl_pinjam, peminjaman.tgl_kembali_rencana, peminjaman.diverifikasi_oleh, users.nama_lengkap,
                                              GROUP_CONCAT(CONCAT(barang.nama_barang, '::', peminjaman.status_pengajuan) SEPARATOR '||') as list_barang_status,
                                              GROUP_CONCAT(IFNULL(peminjaman.no_hp, '-') SEPARATOR '||') as list_no_hp,
+                                             GROUP_CONCAT(IFNULL(peminjaman.bukti_wajah, 'no_image.jpg') SEPARATOR '||') as list_bukti_wajah,
                                              GROUP_CONCAT(IFNULL(peminjaman.keperluan, '-') SEPARATOR '||') as list_keperluan
                                       FROM peminjaman 
                                       JOIN users ON peminjaman.id_user = users.id_user 
@@ -236,6 +238,7 @@ $total_halaman = ceil($total_data / $limit);
                         $query_sql = "SELECT peminjaman.tgl_pinjam, peminjaman.tgl_kembali_asli, peminjaman.diverifikasi_oleh, users.nama_lengkap,
                                              GROUP_CONCAT(CONCAT(barang.nama_barang, '::', peminjaman.status_pengajuan) SEPARATOR '||') as list_barang_status,
                                              GROUP_CONCAT(IFNULL(peminjaman.no_hp, '-') SEPARATOR '||') as list_no_hp,
+                                             GROUP_CONCAT(IFNULL(peminjaman.bukti_wajah, 'no_image.jpg') SEPARATOR '||') as list_bukti_wajah,
                                              GROUP_CONCAT(IFNULL(peminjaman.keperluan, '-') SEPARATOR '||') as list_keperluan
                                       FROM peminjaman 
                                       JOIN users ON peminjaman.id_user = users.id_user 
@@ -253,8 +256,11 @@ $total_halaman = ceil($total_data / $limit);
                         while($row = mysqli_fetch_assoc($sql_execute)) {
                             $arr_no_hp = explode('||', $row['list_no_hp']);
                             $arr_keperluan = explode('||', $row['list_keperluan']);
+                            $arr_bukti_wajah = explode('||', $row['list_bukti_wajah']);
+                            
                             $no_hp_tampil = (!empty($arr_no_hp[0]) && $arr_no_hp[0] !== '-') ? $arr_no_hp[0] : 'Tidak Diisi';
                             $keperluan_tampil = (!empty($arr_keperluan[0]) && $arr_keperluan[0] !== '-') ? $arr_keperluan[0] : 'Tidak ada deskripsi';
+                            $bukti_wajah_tampil = (!empty($arr_bukti_wajah[0]) && $arr_bukti_wajah[0] !== 'no_image.jpg') ? $arr_bukti_wajah[0] : 'no_image.jpg';
 
                             if ($view_mode == 'aktif') {
                                 $tanggal_ujung = date('d M Y, H:i', strtotime($row['tgl_kembali_rencana'])) . " WIB";
@@ -273,6 +279,7 @@ $total_halaman = ceil($total_data / $limit);
                                     data-peminjam="<?= htmlspecialchars($row['nama_lengkap']) ?>"
                                     data-no-hp="<?= htmlspecialchars($no_hp_tampil) ?>"
                                     data-keperluan="<?= htmlspecialchars($keperluan_tampil) ?>"
+                                    data-foto="<?= htmlspecialchars($bukti_wajah_tampil) ?>"
                                     data-items="<?= htmlspecialchars($row['list_barang_status']) ?>">
                                 🔍 Lihat Rincian
                             </button>
@@ -326,6 +333,13 @@ $total_halaman = ceil($total_data / $limit);
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body p-4">
+                    <div class="text-center mb-3">
+                        <strong class="d-block mb-2 small text-secondary text-start">Bukti Otentikasi Kamera Wajah:</strong>
+                        <div style="max-width: 100%; height: 180px; overflow: hidden; border-radius: 10px; border: 2px solid var(--tosca-tua);" class="mx-auto d-flex align-items-center justify-content-center bg-dark">
+                            <img id="detail_bukti_wajah" src="../assets/img/bukti_pinjam/no_image.jpg" alt="Bukti Wajah Siswa" class="img-fluid" style="height: 100%; width: 100%; object-fit: cover;">
+                        </div>
+                    </div>
+                    
                     <p class="text-muted fs-6 mb-1">Siswa: <strong id="detail_nama_peminjam" class="text-dark"></strong></p>
                     <p class="text-muted fs-6 mb-3">Kontak: <strong id="detail_no_hp" class="text-success"></strong></p>
                     
@@ -343,7 +357,6 @@ $total_halaman = ceil($total_data / $limit);
 
     <script src="../assets/bootstrap-5.3.8-dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        // JAVASCRIPT AUTO-REDIRECT DROPDOWN LIMIT BARU
         document.getElementById('changeLimit').addEventListener('change', function() {
             const selectedLimit = this.value;
             const searchVal = "<?= urlencode($search) ?>";
@@ -359,11 +372,20 @@ $total_halaman = ceil($total_data / $limit);
                 const nama = this.getAttribute('data-peminjam');
                 const noHp = this.getAttribute('data-no-hp');
                 const keperluan = this.getAttribute('data-keperluan');
+                const namaFoto = this.getAttribute('data-foto');
                 const rawItemsData = this.getAttribute('data-items'); 
                 
                 document.getElementById('detail_nama_peminjam').innerText = nama;
                 document.getElementById('detail_no_hp').innerText = noHp;
                 document.getElementById('detail_keperluan').innerText = keperluan;
+                
+                // 🔥 LOGIKA MERENDER GAMBAR BUKTI WAJAH SECARA DINAMIS
+                const imgElement = document.getElementById('detail_bukti_wajah');
+                if (namaFoto && namaFoto !== 'no_image.jpg') {
+                    imgElement.src = `../assets/img/bukti_pinjam/${namaFoto}`;
+                } else {
+                    imgElement.src = '../assets/img/bukti_pinjam/no_image.jpg';
+                }
                 
                 const container = document.getElementById('container_list_barang');
                 container.innerHTML = ''; 

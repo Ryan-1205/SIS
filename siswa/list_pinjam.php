@@ -36,7 +36,10 @@ if (isset($_SERVER['HTTP_REFERER'])) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>List Pinjam Barang - SIS</title>
+    <title>SIS - Sixseven Inventory System</title>
+    <link rel="icon" type="image/png" href="../assets/img/logo/smk.png">
+
+
     <link rel="stylesheet" href="../assets/bootstrap-5.3.8-dist/css/bootstrap.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="../assets/css/style.css?v=1.4">
@@ -228,8 +231,7 @@ if (isset($_SERVER['HTTP_REFERER'])) {
                             <th class="text-start">KEPERLUAN</th>
                             <th>NO. HANDPHONE</th>
                             <th>STATUS</th>
-                            <th>AKSI</th> 
-                        </tr>
+                            </tr>
                     </thead>
                     <tbody>
                         <?php 
@@ -252,23 +254,14 @@ if (isset($_SERVER['HTTP_REFERER'])) {
                                     <?php if ($disetujui['status_pengajuan'] == 'disetujui'): ?>
                                         <span class="badge-status status-approved">✔️ Dipinjam</span>
                                     <?php else: ?>
-                                        <span class="badge-status status-pending">⏳ Proses Pengembalian</span>
+                                        <span class="badge-status status-returning text-info" style="background-color: #e1f5fe;">⏳ Menunggu Verifikasi Pengembalian</span>
                                     <?php endif; ?>
                                 </td>
-                                <td>
-                                    <?php if ($disetujui['status_pengajuan'] == 'disetujui'): ?>
-                                        <a href="ajukan_kembali.php?id=<?= $disetujui['id_pinjam']; ?>" class="btn btn-sm btn-danger fw-bold px-3 rounded-pill" onclick="return confirm('Apakah Anda yakin ingin mengajukan pengembalian untuk aset ini?')">
-                                            Kembalikan
-                                        </a>
-                                    <?php else: ?>
-                                        <span class="badge-status status-returning small fw-bold">Menunggu Admin</span>
-                                    <?php endif; ?>
-                                </td>
-                            </tr>
+                                </tr>
                         <?php 
                             }
                         } else {
-                            echo "<tr><td colspan='7' class='py-4 text-center text-muted'>Belum ada aset ter-verifikasi yang sedang kamu bawa.</td></tr>";
+                            echo "<tr><td colspan='6' class='py-4 text-center text-muted'>Belum ada aset ter-verifikasi yang sedang kamu bawa.</td></tr>";
                         }
                         ?>
                     </tbody>
@@ -395,7 +388,6 @@ if (isset($_SERVER['HTTP_REFERER'])) {
         let streamWebcam = null;
         let intervalScan = null;
 
-        // FUNGSI UTK MENDAPATKAN FORMAT DATETIME LOCAL (YYYY-MM-DDTHH:MM)
         function dapetWaktuSekarangLokal() {
             const sekarang = new Date();
             const offset = sekarang.getTimezoneOffset() * 60000; 
@@ -409,7 +401,7 @@ if (isset($_SERVER['HTTP_REFERER'])) {
             document.getElementById('modal_tgl_pinjam').value = sekarangWaktuLokal;
             document.getElementById('modal_tgl_kembali').value = ""; 
             
-            document.getElementById('modal_tgl_pinjam').min = sekarangWaktuLokal;
+            document.getElementById('modal_tgl_pinjam').min = Bird = sekarangWaktuLokal;
             document.getElementById('modal_tgl_kembali').min = sekarangWaktuLokal;
             
             document.getElementById('formFieldsContainer').style.display = 'block';
@@ -499,112 +491,129 @@ if (isset($_SERVER['HTTP_REFERER'])) {
         }
 
         async function initFaceAPI() {
-            const statusDiv = document.getElementById('scanStatus');
-            try {
-                await faceapi.nets.ssdMobilenetv1.loadFromUri('http://localhost/SIS/assets/models');
-                await faceapi.nets.faceLandmark68Net.loadFromUri('http://localhost/SIS/assets/models');
-                await faceapi.nets.faceRecognitionNet.loadFromUri('http://localhost/SIS/assets/models');
-                
-                statusDiv.innerText = "Mencari & mengunci wajah depan kamera...";
+    const statusDiv = document.getElementById('scanStatus');
+    try {
+        // 1. Gunakan absolute path URI yang stabil untuk memuat weights model
+        const pathModels = `http://${window.location.hostname}/SIS/assets/models`;
+        
+        if (!faceapi.nets.ssdMobilenetv1.isLoaded) {
+            await faceapi.nets.ssdMobilenetv1.loadFromUri(pathModels);
+            await faceapi.nets.faceLandmark68Net.loadFromUri(pathModels);
+            await faceapi.nets.faceRecognitionNet.loadFromUri(pathModels);
+        }
+        
+        statusDiv.innerText = "Mencari & mengunci wajah depan kamera...";
 
-                const namaFileMaster = "<?= $foto_master_db; ?>";
-                const imgReference = await faceapi.fetchImage('http://localhost/SIS/assets/img/pengguna/' + namaFileMaster);
-                
-                const refDescriptor = await faceapi.detectSingleFace(imgReference).withFaceLandmarks().withFaceDescriptor();
-                
-                if (!refDescriptor) {
-                    statusDiv.innerHTML = "<span class='text-danger fw-bold'>❌ Foto Master Akun di DB Terlalu Buram! Hubungi Admin Lab.</span>";
-                    return;
-                }
-
-                const faceMatcher = new faceapi.FaceMatcher(refDescriptor, 0.5);
-                const video = document.getElementById('webcam');
-                const canvasPreview = document.getElementById('previewFoto');
-                
-                video.style.display = "block";
-                canvasPreview.style.display = "none";
-
-                intervalScan = setInterval(async () => {
-                    if (video.paused || video.ended) return;
-                    
-                    const detections = await faceapi.detectSingleFace(video).withFaceLandmarks().withFaceDescriptor();
-                    
-                    if (detections) {
-                        const match = faceMatcher.findBestMatch(detections.descriptor);
-                        
-                        if (match.label !== 'unknown') {
-                            clearInterval(intervalScan);
-
-                            const vidWidth = video.videoWidth;
-                            const vidHeight = video.videoHeight;
-
-                            if (vidWidth > 0 && vidHeight > 0) {
-                                canvasPreview.width = vidWidth;
-                                canvasPreview.height = vidHeight;
-                                
-                                const ctx = canvasPreview.getContext('2d');
-                                ctx.drawImage(video, 0, 0, vidWidth, vidHeight);
-                                
-                                const dataURL = canvasPreview.toDataURL('image/jpeg', 0.9);
-                                document.getElementById('snapshot_wajah').value = dataURL;
-                            }
-
-                            video.style.display = "none";
-                            canvasPreview.style.display = "block";
-
-                            canvasPreview.style.zIndex = "4"; 
-                            statusDiv.style.zIndex = "5"; 
-                            statusDiv.style.background = "transparent"; 
-
-                            statusDiv.innerHTML = "<div class='text-white fw-bold px-4 py-2 rounded-pill shadow-sm' style='background: #1e6f65; position: absolute; bottom: 15px;'>✅ Wajah Terverifikasi! Mengirimkan Berkas...</div>";
-                            document.getElementById('btnBatalModal').classList.add('d-none');
-
-                            if (streamWebcam) {
-                                streamWebcam.getTracks().forEach(track => track.stop());
-                            }
-
-                            setTimeout(() => {
-                                document.getElementById('formPinjam').submit();
-                            }, 1200);
-
-                        } else {
-                            statusDiv.style.background = "transparent";
-                            statusDiv.innerHTML = "<div class='text-white fw-bold px-3 py-1 rounded-pill shadow-sm' style='background: rgba(220, 53, 69, 0.85); position: absolute; bottom: 10px; font-size: 11px; z-index: 6;'>❌ Wajah Tidak Sesuai Pemilik Akun!</div>";
-                        }
-                    } else {
-                        statusDiv.style.background = "rgba(0,0,0,0.75)";
-                        statusDiv.innerHTML = "<span class='text-warning fw-bold'>⚠️ Wajah tidak terdeteksi. Hadapkan muka lurus ke kamera.</span>";
-                    }
-                }, 400);
-
-            } catch (error) {
-                console.error(error);
-                statusDiv.innerText = "Gagal memuat model berkas face-api lokal.";
-            }
+        const namaFileMaster = "<?= $foto_master_db; ?>";
+        const imgReference = await faceapi.fetchImage(`http://${window.location.hostname}/SIS/assets/img/pengguna/` + namaFileMaster);
+        
+        const refDescriptor = await faceapi.detectSingleFace(imgReference).withFaceLandmarks().withFaceDescriptor();
+        
+        if (!refDescriptor) {
+            statusDiv.innerHTML = "<span class='text-danger fw-bold'>❌ Foto Master Akun di DB Terlalu Buram! Hubungi Admin Lab.</span>";
+            return;
         }
 
-        // ===================================================================================
-        // 1. NOTIFIKASI EVALUASI REAL-TIME DATA AUTO-REJECT (DOUBLE BOOKING)
-        // ===================================================================================
-        <?php 
-        $cek_tolak_sakti = mysqli_query($conn, "SELECT b.nama_barang FROM peminjaman p 
-                                                JOIN barang b ON p.id_barang = b.id_barang 
-                                                WHERE p.id_user = '$id_user_login' 
-                                                  AND p.status_pengajuan = 'ditolak' 
-                                                  AND p.keperluan LIKE '%Otomatis Ditolak%' 
-                                                ORDER BY p.id_pinjam DESC LIMIT 1");
+        // 2. Naikkan ambang batas kecocokan (distance threshold) ke 0.58 agar lebih fleksibel terhadap pencahayaan lab
+        const faceMatcher = new faceapi.FaceMatcher(refDescriptor, 0.58);
+        const video = document.getElementById('webcam');
+        const canvasPreview = document.getElementById('previewFoto');
         
-        if (mysqli_num_rows($cek_tolak_sakti) > 0) {
-            $data_tolak = mysqli_fetch_assoc($cek_tolak_sakti);
-            $nama_barang_gagal = htmlspecialchars($data_tolak['nama_barang']);
-        ?>
-            Swal.fire({
-                title: 'Alokasi Aset Gagal 🔔',
-                html: 'Mohon maaf, pengajuan Anda untuk aset:<br><strong><?= $nama_barang_gagal; ?></strong><br>otomatis dibatalkan oleh sistem karena barang tersebut telah disetujui untuk peminjam lain yang mengantre lebih awal.',
-                icon: 'info',
-                confirmButtonColor: '#e67e22'
-            });
+        video.style.display = "block";
+        canvasPreview.style.display = "none";
+
+        // 3. Daftarkan dimensi display size konstan berdasarkan hardware video feed
+        const displaySize = { width: video.videoWidth || 320, height: video.videoHeight || 240 };
+
+        intervalScan = setInterval(async () => {
+            if (video.paused || video.ended) return;
+            
+            // Lakukan pemindaian wajah langsung dari video feed stream
+            const detections = await faceapi.detectSingleFace(video).withFaceLandmarks().withFaceDescriptor();
+            
+            if (detections) {
+                const match = faceMatcher.findBestMatch(detections.descriptor);
+                
+                if (match.label !== 'unknown') {
+                    clearInterval(intervalScan);
+
+                    // Ambil resolusi riel video untuk snapshot bukti wajah pengajuan
+                    const vidWidth = video.videoWidth;
+                    const vidHeight = video.videoHeight;
+
+                    if (vidWidth > 0 && vidHeight > 0) {
+                        canvasPreview.width = vidWidth;
+                        canvasPreview.height = vidHeight;
+                        
+                        const ctx = canvasPreview.getContext('2d');
+                        ctx.drawImage(video, 0, 0, vidWidth, vidHeight);
+                        
+                        const dataURL = canvasPreview.toDataURL('image/jpeg', 1.0); // Naikkan kualitas ke 1.0 (Tanpa Kompresi)
+                        document.getElementById('snapshot_wajah').value = dataURL;
+                    }
+
+                    video.style.display = "none";
+                    canvasPreview.style.display = "block";
+
+                    canvasPreview.style.zIndex = "4"; 
+                    statusDiv.style.zIndex = "5"; 
+                    statusDiv.style.background = "transparent"; 
+
+                    statusDiv.innerHTML = "<div class='text-white fw-bold px-4 py-2 rounded-pill shadow-sm' style='background: #1e6f65; position: absolute; bottom: 15px;'>✅ Wajah Terverifikasi! Mengirimkan Berkas...</div>";
+                    document.getElementById('btnBatalModal').classList.add('d-none');
+
+                    if (streamWebcam) {
+                        streamWebcam.getTracks().forEach(track => track.stop());
+                    }
+
+                    setTimeout(() => {
+                        document.getElementById('formPinjam').submit();
+                    }, 1200);
+
+                } else {
+                    statusDiv.style.background = "transparent";
+                    statusDiv.innerHTML = "<div class='text-white fw-bold px-3 py-1 rounded-pill shadow-sm' style='background: rgba(220, 53, 69, 0.85); position: absolute; bottom: 10px; font-size: 11px; z-index: 6;'>❌ Wajah Tidak Sesuai Pemilik Akun!</div>";
+                }
+            } else {
+                statusDiv.style.background = "transparent";
+                statusDiv.innerHTML = "<div class='text-white fw-bold px-3 py-1 rounded-pill shadow-sm' style='background: rgba(230, 126, 34, 0.85); position: absolute; bottom: 10px; font-size: 11px; z-index: 6;'>⚠️ Wajah tidak terdeteksi. Harap hadap lurus ke kamera.</div>";
+            }
+        }, 450); // Selaraskan interval scan menjadi 450ms sesuai berkas login.php Anda
+
+    } catch (error) {
+        console.error(error);
+        statusDiv.innerText = "Gagal memuat model berkas face-api lokal.";
+    }
+}
+// ===================================================================================
+        // 1. NOTIFIKASI EVALUASI REAL-TIME DATA AUTO-REJECT (HANYA MUNCUL 1 KALI)
+        // ===================================================================================
         <?php 
+        // Periksa apakah user sudah pernah melihat notifikasi penolakan ini dalam session aktif
+        if (!isset($_SESSION['notif_tolak_terbaca'])) {
+            
+            $cek_tolak_sakti = mysqli_query($conn, "SELECT b.nama_barang FROM peminjaman p 
+                                                    JOIN barang b ON p.id_barang = b.id_barang 
+                                                    WHERE p.id_user = '$id_user_login' 
+                                                      AND p.status_pengajuan = 'ditolak' 
+                                                      AND p.keperluan LIKE '%Otomatis Ditolak%' 
+                                                    ORDER BY p.id_pinjam DESC LIMIT 1");
+            
+            if (mysqli_num_rows($cek_tolak_sakti) > 0) {
+                $data_tolak = mysqli_fetch_assoc($cek_tolak_sakti);
+                $nama_barang_gagal = htmlspecialchars($data_tolak['nama_barang']);
+                
+                // Set flag session agar pada reload/ganti tab berikutnya tidak memicu query ini lagi
+                $_SESSION['notif_tolak_terbaca'] = true;
+        ?>
+                Swal.fire({
+                    title: 'Alokasi Aset Gagal 🔔',
+                    html: 'Mohon maaf, pengajuan Anda untuk aset:<br><strong><?= $nama_barang_gagal; ?></strong><br>otomatis dibatalkan oleh sistem karena barang tersebut telah disetujui untuk peminjam lain yang mengantre lebih awal.',
+                    icon: 'info',
+                    confirmButtonColor: '#e67e22'
+                });
+        <?php 
+            }
         } 
         ?>
 

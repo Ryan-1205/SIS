@@ -3,10 +3,19 @@ session_start();
 // Penyesuaian Jalur: Mundur satu folder untuk memuat konfigurasi database
 include '../koneksi.php';
 
-// Validasi hak akses admin berdasarkan awalan kata 'admin_' pada role session
-if (!isset($_SESSION['id_user']) || strpos($_SESSION['role'], 'admin_') === false) { 
+// 🔥 FIX VALIDASI AKSES: Menggunakan kata 'admin' tanpa underscore agar adminsuper (role: admin) diizinkan lewat
+if (!isset($_SESSION['id_user']) || strpos($_SESSION['role'], 'admin') === false) { 
+    header("Location: ../login.php");
     exit; 
 }
+
+// 🔥 TANGKAP DATA STATE FILTER HALAMAN SEBELUMNYA (Supaya pagination pas balik gak hancur)
+$limit = isset($_GET['limit']) ? (int)$_GET['limit'] : 10;
+$filter_kategori = isset($_GET['filter_kat']) ? $_GET['filter_kat'] : 'all';
+$search = isset($_GET['search']) ? $_GET['search'] : '';
+
+// Buat query string pelengkap URL kembalian
+$url_params = "?limit=" . $limit . "&filter_kat=" . $filter_kategori . "&search=" . urlencode($search);
 
 $id_kategori = $_POST['id_kategori'];
 $kode_barang = mysqli_real_escape_string($conn, $_POST['kode_barang']); 
@@ -18,7 +27,7 @@ $foto_nama = "";
 if (!empty($_FILES['foto']['name'])) {
     $foto_nama = time() . "_" . $_FILES['foto']['name'];
     // Penyesuaian Jalur: File diunggah ke direktori assets yang berada di luar folder admin/
-    move_uploaded_file($_FILES['foto']['tmp_name'], "../assets/img/" . $foto_nama);
+    move_uploaded_file($_FILES['foto']['tmp_name'], "../assets/img/barang/" . $foto_nama);
 }
 
 $status_proses = '';
@@ -65,7 +74,7 @@ if (mysqli_query($conn, $query)) {
                     <p class="text-muted mb-0">Aset barang baru <strong><?= htmlspecialchars($nama_barang); ?></strong> telah sukses dimasukkan ke dalam sistem database.</p>
                 </div>
                 <div class="modal-footer justify-content-center border-0 pb-4">
-                    <a href="admin_barang.php" class="btn btn-tosca text-decoration-none">Selesai</a>
+                    <a href="admin_barang.php<?= $url_params; ?>" class="btn btn-tosca text-decoration-none">Selesai</a>
                 </div>
             </div>
         </div>
@@ -83,7 +92,7 @@ if (mysqli_query($conn, $query)) {
                     <p class="text-muted mb-0">Terjadi kesalahan teknis pada sistem database. Silakan periksa kembali berkas masukan Anda.</p>
                 </div>
                 <div class="modal-footer justify-content-center border-0 pb-4">
-                    <a href="admin_barang.php" class="btn btn-danger-custom text-decoration-none">Coba Kembali</a>
+                    <a href="admin_barang.php<?= $url_params; ?>" class="btn btn-danger-custom text-decoration-none">Coba Kembali</a>
                 </div>
             </div>
         </div>

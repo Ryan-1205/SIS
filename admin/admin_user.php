@@ -3,7 +3,7 @@ session_start();
 // Penyesuaian Jalur: Mundur satu folder untuk memuat konfigurasi database
 include '../koneksi.php';
 
-// Validasi Akses: Memastikan pengguna sudah login dan merupakan bagian dari manajemen admin
+// Validasi Akses: Memastikan pengguna yang mengeksekusi adalah kelompok admin
 if (!isset($_SESSION['id_user']) || strpos($_SESSION['role'], 'admin') === false) {
     header("Location: ../login.php");
     exit;
@@ -21,10 +21,10 @@ $toggle_order = ($order == 'ASC') ? 'DESC' : 'ASC';
 // Menyimpan role user yang sedang login untuk pembatasan hak akses di bawah
 $current_admin_role = $_SESSION['role']; 
 
-// LOGIKA DROPDOWN LIMIT (20 ATAU 50 USER)
+// 🔥 FIX DROPDOWN LIMIT: Perbaikan spasi array agar pilihan 10, 25, 50 bekerja konsisten
 $limit = isset($_GET['limit']) ? (int)$_GET['limit'] : 10;
-if (!in_array($limit, [10,25, 50])) {
-    $limit = 25; 
+if (!in_array($limit, [10, 25, 50])) {
+    $limit = 10; 
 }
 
 // LOGIKA HALAMAN AKTIF (PAGINATION)
@@ -47,10 +47,15 @@ $total_halaman = ceil($total_data / $limit);
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Admin - Data Pengguna</title>
+    <title>SIS - Sixseven Inventory System</title>
+    <link rel="icon" type="image/png" href="../assets/img/logo/smk.png">
     <link rel="stylesheet" href="../assets/bootstrap-5.3.8-dist/css/bootstrap.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="../assets/css/style.css?v=2.6">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    
+    <script defer src="https://cdn.jsdelivr.net/npm/@vladmandic/face-api/dist/face-api.js"></script>
+    
     <style>
         .admin-search-container { max-width: 1000px; margin: 30px auto 15px auto; }
         .admin-search-form { display: flex; border: 2px solid var(--tosca-tua); border-radius: 50px; padding: 4px; background: white; }
@@ -78,7 +83,6 @@ $total_halaman = ceil($total_data / $limit);
         .pagination .page-link { color: var(--tosca-tua); border-color: var(--tosca-muda); }
         .pagination .page-item.active .page-link { background-color: var(--tosca-tua); border-color: var(--tosca-tua); color: white; }
 
-        /* Style Kursor untuk Foto Thumbnail */
         .img-user-thumb {
             width: 40px; 
             height: 40px; 
@@ -132,7 +136,7 @@ $total_halaman = ceil($total_data / $limit);
         </div>
 
         <div class="admin-table-wrapper"> 
-            <form action="admin_user_hapus_massal.php" method="POST" id="formBulkDelete">
+            <form action="admin_user_hapus_massal.php?limit=<?= $limit ?>&sort=<?= $sort ?>&order=<?= $order ?>&search=<?= urlencode($search) ?>" method="POST" id="formBulkDelete">
             <table class="admin-table">
                 <thead>
                     <tr>
@@ -177,7 +181,7 @@ $total_halaman = ceil($total_data / $limit);
                                 $nis_tampil = htmlspecialchars($row['nis']);
                             }
 
-                            $gambar_wajah = (!empty($row['foto_resmi']) && file_exists("../assets/img/pengguna/" . $row['foto_resmi'])) ? "../assets/img/pengguna/" . $row['foto_resmi'] : "../assets/img/pengguna/default_user.jpg";
+                            $gambar_wajah = (!empty($row['foto_resmi']) && file_exists("../assets/img/pengguna/" . $row['foto_resmi'])) ? "../assets/img/pengguna/" . $row['foto_resmi'] : "../assets/img/default_user.jpg";
                     ?>
                     <tr id="row_<?= $id_u; ?>">
                         <td class="col-select-master">
@@ -231,7 +235,7 @@ $total_halaman = ceil($total_data / $limit);
                             <?php endif; ?>
                             
                             <div class="edit-mode d-none d-flex justify-content-center gap-2">
-                                <button type="button" class="btn btn-sm btn-success px-2 rounded-pill fw-bold" onclick="simpanEditInline(<?= $id_u; ?>)">Simpan</button>
+                                <button type="button" class="btn btn-sm btn-success px-2 rounded-pill fw-bold" onclick="praValidasiWajahInline(<?= $id_u; ?>)">Simpan</button>
                                 <button type="button" class="btn btn-sm btn-secondary px-2 rounded-pill fw-bold" onclick="batalEditInline(<?= $id_u; ?>)">Batal</button>
                             </div>
                         </td>
@@ -296,7 +300,7 @@ $total_halaman = ceil($total_data / $limit);
                     <h5 class="modal-title text-white fw-bold">Tambahkan Pengguna Baru</h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                <form action="admin_user_tambah_proses.php" method="POST" enctype="multipart/form-data">
+                <form action="admin_user_tambah_proses.php?limit=<?= $limit ?>&sort=<?= $sort ?>&order=<?= $order ?>&search=<?= urlencode($search) ?>" method="POST" enctype="multipart/form-data">
                     <div class="modal-body p-4">
                         <div class="mb-3">
                             <label class="form-label fw-bold" style="color: var(--tosca-tua);">Nama Lengkap :</label>
@@ -380,7 +384,70 @@ $total_halaman = ceil($total_data / $limit);
             document.getElementById('input_foto_' + id).value = '';
         }
 
-        function simpanEditInline(id) {
+        // 🔥 LANGKAH 2: MEMBUAT FUNGSI PRA-VALIDASI DETEKSI WAJAH SEBELUM UNGGAH AJAX
+        async function praValidasiWajahInline(id) {
+            const fotoInput = document.getElementById('input_foto_' + id);
+
+            // Jika admin tidak mengganti gambar acuan, bypass pengecekan dan langsung kirim kueri
+            if (fotoInput.files.length === 0) {
+                eksekusiSimpanEditInline(id);
+                return;
+            }
+
+            // Tampilkan popup pemuatan berkas model kognitif AI
+            Swal.fire({
+                title: 'Menjalankan Deteksi Wajah...',
+                text: 'Sistem sedang memvalidasi kelayakan struktur biometric wajah pada gambar.',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+
+            try {
+                // Konfigurasi absolute path pemuatan arsitektur model neural face-api
+                const pathModels = `http://${window.location.hostname}/SIS/assets/models`;
+                
+                // Muat model pendeteksi objek wajah dasar
+                if (!faceapi.nets.ssdMobilenetv1.isLoaded) {
+                    await faceapi.nets.ssdMobilenetv1.loadFromUri(pathModels);
+                }
+
+                // Konversi file input biner menjadi elemen objek gambar HTML agar bisa dibaca AI
+                const fileGambar = fotoInput.files[0];
+                const objekGambarHtml = await faceapi.bufferToImage(fileGambar);
+
+                // Eksekusi pemindaian objek wajah
+                const deteksiWajah = await faceapi.detectSingleFace(objekGambarHtml);
+
+                Swal.close(); // Tutup loading state pemindaian
+
+                if (deteksiWajah) {
+                    // Jika wajah terdeteksi jelas, lanjutkan ke proses penyimpanan database
+                    eksekusiSimpanEditInline(id);
+                } else {
+                    // 🔥 POPUP WARNING JIKA WAJAH TIDAK TERDETEKSI (CONFIRM BUTTON ORANYE)
+                    Swal.fire({
+                        title: 'Validasi Gambar Gagal ⚠️',
+                        text: 'Wajah pengguna tidak terdeteksi secara jelas pada berkas gambar. Pastikan posisi wajah menghadap lurus ke depan kamera, mendapatkan pencahayaan yang cukup, dan tidak blur.',
+                        icon: 'warning',
+                        confirmButtonColor: '#e67e22'
+                    });
+                }
+            } catch (error) {
+                console.error(error);
+                Swal.close();
+                Swal.fire({
+                    title: 'Kesalahan Sistem AI',
+                    text: 'Gagal memuat arsitektur pustaka biometrik wajah atau berkas model lokal korup.',
+                    icon: 'error',
+                    confirmButtonColor: '#dc3545'
+                });
+            }
+        }
+
+        // Fungsi AJAX inti untuk pengiriman data ke database
+        function eksekusiSimpanEditInline(id) {
             const namaVal = document.getElementById('input_nama_' + id).value;
             const nisVal  = document.getElementById('input_nis_' + id).value;
             const roleVal = document.getElementById('input_role_' + id).value;
@@ -396,16 +463,62 @@ $total_halaman = ceil($total_data / $limit);
                 formData.append("foto_resmi", fotoInput.files[0]);
             }
 
+            Swal.fire({
+                title: 'Memproses Data...',
+                text: 'Sedang menyelaraskan data dengan database sistem.',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+
             const xhr = new XMLHttpRequest();
             xhr.open("POST", "admin_user_edit_inline_proses.php", true);
             
-            xhr.onreadystatechange = function() {
-                if (xhr.readyState === 4 && xhr.status === 200) {
-                    if (xhr.responseText.trim() === "success") {
-                        window.location.reload();
+            xhr.onload = function() {
+                Swal.close();
+
+                if (xhr.status === 200) {
+                    const responServer = xhr.responseText.trim();
+
+                    if (responServer === "success") {
+                        Swal.fire({
+                            title: 'Pembaruan Berhasil!',
+                            text: 'Data identitas pengguna telah berhasil diperbarui ke dalam sistem.',
+                            icon: 'success',
+                            confirmButtonColor: '#1e6f65'
+                        }).then(() => {
+                            window.location.reload();
+                        });
+                    } else if (responServer === "duplicate_entry") {
+                        Swal.fire({
+                            title: 'Validasi Identitas Gagal ⚠️',
+                            text: 'Nomor Induk Siswa (NIS) sudah terdaftar pada pengguna lain.',
+                            icon: 'warning',
+                            confirmButtonColor: '#e67e22'
+                        });
+                    } else if (responServer === "unauthorized") {
+                        Swal.fire({
+                            title: 'Akses Ditolak!',
+                            text: 'Sesi Anda tidak memiliki otoritas yang sah.',
+                            icon: 'error',
+                            confirmButtonColor: '#dc3545'
+                        });
                     } else {
-                        alert("Gagal memperbarui data pengguna: " + xhr.responseText);
+                        Swal.fire({
+                            title: 'Kesalahan Sistem',
+                            text: 'Gagal memproses data. Keterangan: ' + responServer,
+                            icon: 'error',
+                            confirmButtonColor: '#dc3545'
+                        });
                     }
+                } else {
+                    Swal.fire({
+                        title: 'Koneksi Terputus',
+                        text: 'Gagal terhubung dengan server lokal.',
+                        icon: 'error',
+                        confirmButtonColor: '#dc3545'
+                    });
                 }
             };
             xhr.send(formData);
@@ -468,12 +581,77 @@ $total_halaman = ceil($total_data / $limit);
 
         btnBulkDelete.addEventListener('click', function() {
             const total = document.querySelectorAll('.item-checkbox:checked').length;
-            const konfirmasi = confirm("Apakah Anda yakin ingin menghapus permanen sejumlah " + total + " akun pengguna dari database?");
-            if (konfirmasi) {
-                document.getElementById('formBulkDelete').submit();
-            }
+            
+            Swal.fire({
+                title: 'Apakah Anda Yakin?',
+                text: "Anda akan menghapus permanen " + total + " akun pengguna dari database. Data yang dihapus tidak dapat dipulihkan.",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#dc3545',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Ya, Hapus Permanen!',
+                cancelButtonText: 'Batal'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    document.getElementById('formBulkDelete').submit();
+                }
+            });
         });
     </script>
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const status = urlParams.get('status');
+        
+        const config = {
+            'tambah_sukses': { title: 'Pendaftaran Berhasil!', text: 'Akun pengguna baru telah didaftarkan.', icon: 'success' },
+            'gagal_duplikat': { title: 'Validasi Gagal ⚠️', text: 'Nomor Induk Siswa (NIS) tersebut sudah terdaftar.', icon: 'warning' },
+            'gagal_format': { title: 'Format Tidak Valid', text: 'Gunakan JPG/PNG (Max 5MB).', icon: 'error' },
+            'gagal_db': { title: 'Kesalahan Database', text: 'Gagal menyimpan data ke sistem.', icon: 'error' }
+        };
+
+        if (status && config[status]) {
+            Swal.fire({
+                title: config[status].title,
+                text: config[status].text,
+                icon: config[status].icon,
+                confirmButtonColor: '#1e6f65'
+            }).then(() => {
+                window.history.replaceState({}, document.title, window.location.pathname);
+            });
+        }
+    });
+</script>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const status = urlParams.get('status');
+        const count = urlParams.get('count');
+
+        if (status === 'hapus_sukses') {
+            Swal.fire({
+                title: 'Penghapusan Berhasil!',
+                text: 'Sistem telah menghapus ' + count + ' data pengguna secara permanen.',
+                icon: 'success',
+                confirmButtonColor: '#1e6f65'
+            }).then(() => {
+                window.history.replaceState({}, document.title, window.location.pathname);
+            });
+        }
+
+        if (status === 'gagal_pilih') {
+            Swal.fire({
+                title: '⚠️ Perhatian',
+                text: 'Silakan pilih minimal satu pengguna terlebih dahulu untuk melakukan penghapusan.',
+                icon: 'warning',
+                confirmButtonColor: '#1e6f65'
+            }).then(() => {
+                window.history.replaceState({}, document.title, window.location.pathname);
+            });
+        }
+    });
+</script>
     <?php include '../components/footer.php'; ?>
 </body>
 </html>

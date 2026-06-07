@@ -27,7 +27,8 @@ if ($current_admin_role === 'admin') {
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Admin <?= $nama_lab_tampil; ?> - Verifikasi Pengembalian</title>
+    <title>SIS - Sixseven Inventory System</title>
+    <link rel="icon" type="image/png" href="../assets/img/logo/smk.png">
     <link rel="stylesheet" href="../assets/bootstrap-5.3.8-dist/css/bootstrap.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="../assets/css/style.css?v=2.6">
