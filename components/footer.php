@@ -1,5 +1,5 @@
 <?php
-// Memastikan session aktif untuk menarik informasi dinamis jika diperlukan
+// Memastikan session aktif jika suatu saat dibutuhkan
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
@@ -12,7 +12,7 @@ $prefix_footer = ($current_dir_footer === 'admin') ? '../' : '';
 <footer class="footer-professional mt-5">
     <div class="footer-top-line"></div>
     <div class="safe-container py-5 px-4">
-        <div class="row gy-4 justify-content-between">
+        <div class="row gy-4 justify-content-between align-items-start">
             
             <div class="col-lg-4 col-md-12">
                 <h5 class="footer-brand mb-3">SIS <span class="brand-sub-footer">| Sixseven Inventory System</span></h5>
@@ -21,7 +21,7 @@ $prefix_footer = ($current_dir_footer === 'admin') ? '../' : '';
                 </p>
             </div>
             
-            <div class="col-lg-3 col-md-4">
+            <div class="col-lg-3 col-md-6">
                 <h6 class="footer-section-title mb-3">Tim Pengembang</h6>
                 <ul class="list-unstyled footer-developer-list m-0 p-0">
                     <li>💻 <strong>Ryan Ardiansyah</strong> <span class="dev-nim">(2407431002)</span></li>
@@ -33,18 +33,10 @@ $prefix_footer = ($current_dir_footer === 'admin') ? '../' : '';
                 </div>
             </div>
             
-            <div class="col-lg-3 col-md-4">
-                <h6 class="footer-section-title mb-3">Status Autentikasi</h6>
-                <div class="footer-status-card p-3 rounded-3">
-                    <?php if (isset($_SESSION['id_user'])) : ?>
-                        <span class="d-block small text-white-50">Pengguna Aktif:</span>
-                        <strong class="d-block text-white mb-2"><?= htmlspecialchars($_SESSION['nama_lengkap']); ?></strong>
-                        <span class="badge-session uppercase-text"><?= str_replace('_', ' ', $_SESSION['role']); ?></span>
-                    <?php else : ?>
-                        <div class="d-flex align-items-center gap-2 text-warning small">
-                            <span>⚠️</span> <span>Sesi Terbuka Anonim (Belum Masuk)</span>
-                        </div>
-                    <?php endif; ?>
+            <div class="col-lg-4 col-md-6">
+                <h6 class="footer-section-title mb-3">Lokasi</h6>
+                <div class="map-responsive-wrapper">
+                    <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d1379.6901637238436!2d106.85526126212754!3d-6.346292510338262!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x2e69edd7b67bf0c9%3A0x8e78091a50d05efd!2sProfessional%20School%20State%2067%20of%20Jakarta!5e0!3m2!1sen!2sid!4v1780459272994!5m2!1sen!2sid%22" width="100%" height="100%" style="border:0;" allowfullscreen="" loading="lazy"></iframe>
                 </div>
             </div>
 
@@ -101,23 +93,6 @@ $prefix_footer = ($current_dir_footer === 'admin') ? '../' : '';
         letter-spacing: 1px;
     }
 
-    /* Link Navigasi Footer */
-    .footer-links li {
-        margin-bottom: 10px;
-    }
-    .footer-links a {
-        color: #b0cfcb;
-        text-decoration: none;
-        font-size: 13px;
-        font-weight: 400;
-        transition: all 0.2s ease;
-        display: inline-block;
-    }
-    .footer-links a:hover {
-        color: #ffffff;
-        transform: translateX(4px); /* Efek bergeser halus saat hover */
-    }
-
     /* Styling Bagian Developer Info */
     .footer-developer-list li {
         font-size: 13px;
@@ -140,23 +115,18 @@ $prefix_footer = ($current_dir_footer === 'admin') ? '../' : '';
         display: inline-block;
     }
 
-    /* Kotak Status Akses */
-    .footer-status-card {
-        background-color: rgba(255, 255, 255, 0.04);
-        border: 1px solid rgba(255, 255, 255, 0.08);
+    /* 🔥 CSS MAPS RESPONSIF SEJAJAR DAN RAPI */
+    .map-responsive-wrapper {
+        width: 100%;
+        height: 115px; /* Tinggi disesuaikan agar simetris dengan boks tengah */
+        border-radius: 10px;
+        overflow: hidden;
+        border: 2px solid rgba(164, 212, 204, 0.15);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        transition: border-color 0.3s ease;
     }
-    .badge-session {
-        background-color: #1a5f57;
-        color: #ffffff;
-        font-size: 10px;
-        font-weight: 700;
-        padding: 4px 10px;
-        border-radius: 50px;
-        display: inline-block;
-        letter-spacing: 0.5px;
-    }
-    .uppercase-text {
-        text-transform: uppercase;
+    .map-responsive-wrapper:hover {
+        border-color: rgba(164, 212, 204, 0.4);
     }
 
     /* Bagian Hak Cipta Penutup */
