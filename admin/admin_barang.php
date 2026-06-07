@@ -12,8 +12,7 @@ if (!isset($_SESSION['id_user']) || strpos($_SESSION['role'], 'admin') === false
 $current_admin_role = $_SESSION['role'];
 $id_kategori_admin = isset($_SESSION['id_kategori']) ? $_SESSION['id_kategori'] : 1;
 
-// 🔥 PARAMETER FILTER KATEGORI BARU (Khusus Super Admin)
-// Jika admin biasa, otomatis pakai id_kategori dari session-nya
+// PARAMETER FILTER KATEGORI BARU (Khusus Super Admin)
 $filter_kategori = isset($_GET['filter_kat']) ? $_GET['filter_kat'] : 'all';
 
 // Memuat nama kategori laboratorium secara dinamis
@@ -39,7 +38,7 @@ $halaman = isset($_GET['halaman']) ? (int)$_GET['halaman'] : 1;
 if ($halaman < 1) { $halaman = 1; }
 $offset = ($halaman - 1) * $limit;
 
-// 🔥 LOGIKA COUNT BARU: Menyesuaikan dengan Filter Kategori Dropdown Super Admin
+// LOGIKA COUNT BARU: Menyesuaikan dengan Filter Kategori Dropdown Super Admin
 if ($current_admin_role === 'admin') {
     if ($filter_kategori !== 'all') {
         $fk_escaped = mysqli_real_escape_string($conn, $filter_kategori);
@@ -93,6 +92,19 @@ $total_halaman = ceil($total_data / $limit);
 
         .pagination .page-link { color: var(--tosca-tua); border-color: var(--tosca-muda); }
         .pagination .page-item.active .page-link { background-color: var(--tosca-tua); border-color: var(--tosca-tua); color: white; }
+
+        /* Style Foto Mini Thumbnail */
+        .img-barang-thumb {
+            width: 45px; 
+            height: 45px; 
+            object-fit: contain; 
+            border-radius: 6px;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        .img-barang-thumb:hover {
+            transform: scale(1.15);
+        }
     </style>
 </head>
 <body>
@@ -172,7 +184,6 @@ $total_halaman = ceil($total_data / $limit);
                 </thead>
                 <tbody>
                     <?php 
-                    // 🔥 LOGIKA DATA QUERY: Menyaring berdasarkan seleksi dropdown kategori super admin
                     if ($current_admin_role === 'admin') {
                         if ($filter_kategori !== 'all') {
                             $fk_escaped = mysqli_real_escape_string($conn, $filter_kategori);
@@ -221,15 +232,15 @@ $total_halaman = ceil($total_data / $limit);
                                 }
                             }
 
-                            if (!empty($row['foto']) && file_exists("../assets/img/" . $row['foto'])) {
-                                $gambar_tampil = "../assets/img/" . $row['foto'];
+                            if (!empty($row['foto']) && file_exists("../assets/img/barang/" . $row['foto'])) {
+                                $gambar_tampil = "../assets/img/barang/" . $row['foto'];
                             } else {
                                 switch ($row['id_kategori']) {
                                     case 1: $gambar_tampil = "../assets/img/logoberangkat.png"; break;
                                     case 2: $gambar_tampil = "../assets/img/logodkv.png"; break;
-                                    case 3: $gambar_tampil = "../assets/img/logomm.png"; break;
+                                    case 3: $gambar_tampil = "../assets/img/logodkv.png"; break;
                                     case 4: $gambar_tampil = "../assets/img/logoanm.png"; break;
-                                    default: $gambar_tampil = "../assets/img/logomm.png"; break;
+                                    default: $gambar_tampil = "../assets/img/logoberangkat.png"; break;
                                 }
                             }
                     ?>
@@ -266,8 +277,9 @@ $total_halaman = ceil($total_data / $limit);
                             </select>
                         </td>
                         <td><?= $ketersediaan_badge ?></td>
+                        
                         <td>
-                            <img src="<?= $gambar_tampil; ?>" alt="Preview" class="view-mode" style="width: 45px; height: 45px; object-fit: contain; border-radius: 6px;">
+                            <img src="<?= $gambar_tampil; ?>" alt="Preview" class="view-mode img-barang-thumb tombol-foto-popup" data-nama="<?= htmlspecialchars($row['nama_barang']) ?>" data-src="<?= $gambar_tampil; ?>">
                             <input type="file" class="form-control inline-input edit-mode d-none" id="input_foto_<?= $id_barang; ?>" accept="image/*" style="font-size: 11px;">
                         </td> 
                         <td>
@@ -315,6 +327,20 @@ $total_halaman = ceil($total_data / $limit);
             Menampilkan data ke-<?= $offset + 1; ?> sampai <?= min($offset + $limit, $total_data); ?> dari total <?= $total_data; ?> aset barang.
         </div>
         <?php endif; ?>
+    </div>
+
+    <div class="modal fade" id="modalFotoBarang" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-md" style="max-width: 480px;">
+            <div class="modal-content" style="border: 2px solid var(--tosca-tua); border-radius: 20px;">
+                <div class="modal-header text-white" style="background-color: var(--tosca-tua); border-top-left-radius: 17px; border-top-right-radius: 17px;">
+                    <h6 class="modal-title fw-bold" id="title_nama_barang">Detail Visual Aset Barang</h6>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-3 text-center bg-white rounded-bottom-4">
+                    <img id="img_popup_barang_besar" src="" class="img-fluid rounded-3 border border-light shadow-sm" style="width: 100%; max-height: 450px; object-fit: contain;" alt="Gagal Memuat Gambar">
+                </div>
+            </div>
+        </div>
     </div>
 
     <div class="modal fade" id="modalTambahBarang" tabindex="-1" aria-hidden="true">
@@ -424,14 +450,27 @@ $total_halaman = ceil($total_data / $limit);
 
     <script src="../assets/bootstrap-5.3.8-dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        // JAVASCRIPT REDIRECT AUTO-SINKRON LIMIT DAN FILTER KATEGORI BARU
+        // SCRIPT TRIGGER POPUP FOTO BARANG BESAR
+        const tombolFotoBarang = document.querySelectorAll('.tombol-foto-popup');
+        const modalFotoBarangBS = new bootstrap.Modal(document.getElementById('modalFotoBarang'));
+
+        tombolFotoBarang.forEach(img => {
+            img.addEventListener('click', function() {
+                const srcGambar = this.getAttribute('data-src');
+                const namaBarang = this.getAttribute('data-nama');
+                
+                document.getElementById('title_nama_barang').innerText = "📦 Detail Visual: " + namaBarang;
+                document.getElementById('img_popup_barang_besar').setAttribute('src', srcGambar);
+                modalFotoBarangBS.show();
+            });
+        });
+
         const changeLimit = document.getElementById('changeLimit');
         const filterKategori = document.getElementById('filterKategori');
         const searchVal = "<?= urlencode($search) ?>";
 
         function reloadHalamanWithFilters() {
             const limitVal = changeLimit.value;
-            // Jika dropdown filterKategori tidak ada (login sebagai admin lab biasa), default-kan ke 'all'
             const katVal = filterKategori ? filterKategori.value : 'all';
             window.location.href = `?halaman=1&limit=${limitVal}&filter_kat=${katVal}&search=${searchVal}`;
         }

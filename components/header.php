@@ -16,6 +16,18 @@ if (isset($_SESSION['id_user']) && strpos($_SESSION['role'], 'admin') !== false)
     // Jika admin, diarahkan ke file admin_user.php di dalam folder admin
     $logo_link = ($current_dir === 'admin') ? 'admin_user.php' : $prefix . 'admin/admin_user.php';
 }
+
+// ================= LOGIKA AMBIL FOTO PROFIL DROPDOWN HEADER =================
+$avatar_tampil = $prefix . "assets/img/pengguna/default_user.jpg"; // Fallback cadangan
+if (isset($_SESSION['id_user'])) {
+    // Membawa nama file foto dari session (pastikan saat login lu sudah memasukkan $_SESSION['foto_resmi'] = $data['foto_resmi'])
+    $nama_foto_session = isset($_SESSION['foto_resmi']) ? $_SESSION['foto_resmi'] : '';
+    
+    if (!empty($nama_foto_session) && file_exists($prefix . "assets/img/pengguna/" . $nama_foto_session)) {
+        $avatar_tampil = $prefix . "assets/img/pengguna/" . $nama_foto_session;
+    }
+}
+// ============================================================================
 ?>
 
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
@@ -29,13 +41,14 @@ if (isset($_SESSION['id_user']) && strpos($_SESSION['role'], 'admin') !== false)
             <?php if (isset($_SESSION['id_user'])) : ?>
                 
                 <div class="dropdown">
-                    <span class="nav-link-custom text-white fw-light dropdown-toggle" 
+                    <div class="nav-link-custom text-white fw-light dropdown-toggle d-flex align-items-center gap-2" 
                           id="dropdownUserMenu" 
                           data-bs-toggle="dropdown" 
                           aria-expanded="false" 
                           style="cursor: pointer; user-select: none;">
-                        Hai, <strong class="fw-bold"><?= htmlspecialchars($_SESSION['nama_lengkap']); ?></strong>
-                    </span>
+                        <img src="<?= $avatar_tampil; ?>" alt="User" class="rounded-circle border border-white" style="width: 32px; height: 32px; object-fit: cover;">
+                        <span>Hai, <strong class="fw-bold"><?= htmlspecialchars($_SESSION['nama_lengkap']); ?></strong></span>
+                    </div>
                     <ul class="dropdown-menu dropdown-menu-end shadow border-0 mt-2" aria-labelledby="dropdownUserMenu" style="border-radius: 10px;">
                         <?php if (strpos($_SESSION['role'], 'admin') !== false) : ?>
                             <?php $target_dash = ($current_dir === 'admin') ? 'admin_user.php' : $prefix . 'admin/admin_user.php'; ?>
@@ -72,7 +85,6 @@ function swalLogout(prefixPath) {
         cancelButtonText: 'Batal'
     }).then((result) => {
         if (result.isConfirmed) {
-            // Menggunakan parameter prefix path dinamis agar tidak memicu eror 404
             window.location.href = prefixPath + 'logout.php';
         }
     });

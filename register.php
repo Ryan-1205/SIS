@@ -50,7 +50,7 @@ if (isset($_POST['daftar'])) {
         $error = "Gagal mendaftar. Anda belum melakukan verifikasi potret kamera.";
     } else {
         $nama_file_final = "user_" . $nis . "_" . time() . ".jpg";
-        $target_folder   = "assets/img/" . $nama_file_final;
+        $target_folder   = "assets/img/pengguna/" . $nama_file_final;
         
         $proses_kompres = dekodeKompresDanSimpan($snapshot_wajah, $target_folder, 800, 75);
 

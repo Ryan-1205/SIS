@@ -12,7 +12,7 @@ if ($id_user_login > 0) {
     $query_user = mysqli_query($conn, "SELECT foto_resmi FROM users WHERE id_user = '$id_user_login'");
     if ($row_user = mysqli_fetch_assoc($query_user)) {
         // PENYESUAIAN JALUR FOTO: Ditambahkan ../assets/ untuk pengecekan file fisik dari subfolder
-        if (!empty($row_user['foto_resmi']) && file_exists("../assets/img/" . $row_user['foto_resmi'])) {
+        if (!empty($row_user['foto_resmi']) && file_exists("../assets/img/pengguna/" . $row_user['foto_resmi'])) {
             $foto_master_db = $row_user['foto_resmi'];
         }
     }
@@ -398,7 +398,7 @@ if (isset($_SERVER['HTTP_REFERER'])) {
         // FUNGSI UTK MENDAPATKAN FORMAT DATETIME LOCAL (YYYY-MM-DDTHH:MM)
         function dapetWaktuSekarangLokal() {
             const sekarang = new Date();
-            const offset = sekarang.getTimezoneOffset() * 60000; // Penyesuaian ke zona waktu lokal (WIB/sesuai device)
+            const offset = sekarang.getTimezoneOffset() * 60000; 
             const waktuLokal = new Date(sekarang.getTime() - offset);
             return waktuLokal.toISOString().slice(0, 16);
         }
@@ -406,17 +406,11 @@ if (isset($_SERVER['HTTP_REFERER'])) {
         function bukaModalTanggal() {
             const sekarangWaktuLokal = dapetWaktuSekarangLokal();
             
-            // Waktu mulai pinjam tetap default-nya saat ini
             document.getElementById('modal_tgl_pinjam').value = sekarangWaktuLokal;
+            document.getElementById('modal_tgl_kembali').value = ""; 
             
-            // HAPUS ATAU KOMENTARI BARIS VALUE KEMBALI
-            document.getElementById('modal_tgl_kembali').value = ""; // Membuatnya kosong secara default
-            
-            // Batas minimum tetap berjalan agar siswa tidak bisa pilih tanggal backdate (hari kemarin)
             document.getElementById('modal_tgl_pinjam').min = sekarangWaktuLokal;
             document.getElementById('modal_tgl_kembali').min = sekarangWaktuLokal;
-            
-            // ... kode sisanya ke bawah biarkan tetap sama
             
             document.getElementById('formFieldsContainer').style.display = 'block';
             document.getElementById('webcamSection').style.display = 'none';
@@ -507,17 +501,17 @@ if (isset($_SERVER['HTTP_REFERER'])) {
         async function initFaceAPI() {
             const statusDiv = document.getElementById('scanStatus');
             try {
-                await faceapi.nets.ssdMobilenetv1.loadFromUri('../assets/models');
-                await faceapi.nets.faceLandmark68Net.loadFromUri('../assets/models');
-                await faceapi.nets.faceRecognitionNet.loadFromUri('../assets/models');
+                await faceapi.nets.ssdMobilenetv1.loadFromUri('http://localhost/SIS/assets/models');
+                await faceapi.nets.faceLandmark68Net.loadFromUri('http://localhost/SIS/assets/models');
+                await faceapi.nets.faceRecognitionNet.loadFromUri('http://localhost/SIS/assets/models');
                 
                 statusDiv.innerText = "Mencari & mengunci wajah depan kamera...";
 
                 const namaFileMaster = "<?= $foto_master_db; ?>";
-                const imgReference = await faceapi.fetchImage('../assets/img/' + namaFileMaster);
+                const imgReference = await faceapi.fetchImage('http://localhost/SIS/assets/img/pengguna/' + namaFileMaster);
                 
                 const refDescriptor = await faceapi.detectSingleFace(imgReference).withFaceLandmarks().withFaceDescriptor();
-
+                
                 if (!refDescriptor) {
                     statusDiv.innerHTML = "<span class='text-danger fw-bold'>❌ Foto Master Akun di DB Terlalu Buram! Hubungi Admin Lab.</span>";
                     return;
@@ -589,20 +583,82 @@ if (isset($_SERVER['HTTP_REFERER'])) {
             }
         }
 
+        // ===================================================================================
+        // 1. NOTIFIKASI EVALUASI REAL-TIME DATA AUTO-REJECT (DOUBLE BOOKING)
+        // ===================================================================================
+        <?php 
+        $cek_tolak_sakti = mysqli_query($conn, "SELECT b.nama_barang FROM peminjaman p 
+                                                JOIN barang b ON p.id_barang = b.id_barang 
+                                                WHERE p.id_user = '$id_user_login' 
+                                                  AND p.status_pengajuan = 'ditolak' 
+                                                  AND p.keperluan LIKE '%Otomatis Ditolak%' 
+                                                ORDER BY p.id_pinjam DESC LIMIT 1");
+        
+        if (mysqli_num_rows($cek_tolak_sakti) > 0) {
+            $data_tolak = mysqli_fetch_assoc($cek_tolak_sakti);
+            $nama_barang_gagal = htmlspecialchars($data_tolak['nama_barang']);
+        ?>
+            Swal.fire({
+                title: 'Alokasi Aset Gagal 🔔',
+                html: 'Mohon maaf, pengajuan Anda untuk aset:<br><strong><?= $nama_barang_gagal; ?></strong><br>otomatis dibatalkan oleh sistem karena barang tersebut telah disetujui untuk peminjam lain yang mengantre lebih awal.',
+                icon: 'info',
+                confirmButtonColor: '#e67e22'
+            });
+        <?php 
+        } 
+        ?>
+
+        // ===================================================================================
+        // 2. REVISI NOTIFIKASI URL PARAMETER (BAHASA BAKU & PROFESIONAL)
+        // ===================================================================================
         const urlParams = new URLSearchParams(window.location.search);
         const statusParam = urlParams.get('status');
 
         if (statusParam === 'sukses') {
-            Swal.fire({ title: 'Berhasil Terpilih!', text: 'Barang masuk ke daftar pinjam.', icon: 'success', confirmButtonColor: '#1e6f65', timer: 2500, timerProgressBar: true }).then(() => { window.history.replaceState({}, document.title, window.location.pathname); });
+            Swal.fire({ 
+                title: 'Berhasil Dipilih!', 
+                text: 'Aset barang berhasil dimasukkan ke dalam keranjang rencana peminjaman.', 
+                icon: 'success', 
+                confirmButtonColor: '#1e6f65', 
+                timer: 2500, 
+                timerProgressBar: true 
+            }).then(() => { 
+                window.history.replaceState({}, document.title, window.location.pathname); 
+            });
         }
+        
         if (statusParam === 'ada') {
-            Swal.fire({ title: 'Sudah Dipilih!', text: 'Barang ini sudah ada di dalam daftar pinjam lu, Lek.', icon: 'info', confirmButtonColor: '#1e6f65', timer: 2500, timerProgressBar: true }).then(() => { window.history.replaceState({}, document.title, window.location.pathname); });
+            Swal.fire({ 
+                title: 'Aset Sudah Terpilih!', 
+                text: 'Barang ini sudah berada di dalam daftar keranjang rencana peminjaman Anda.', 
+                icon: 'info', 
+                confirmButtonColor: '#1e6f65', 
+                timer: 2500, 
+                timerProgressBar: true 
+            }).then(() => { 
+                window.history.replaceState({}, document.title, window.location.pathname); 
+            });
         }
+        
         if (statusParam === 'sukses_pinjam') {
             const jumlah = urlParams.get('count');
-            Swal.fire({ title: 'Pengajuan Sukses!', text: 'Berhasil mengirimkan ' + jumlah + ' pengajuan aset ke antrean verifikasi admin.', icon: 'success', confirmButtonColor: '#1e6f65' }).then(() => { window.history.replaceState({}, document.title, window.location.pathname); });
+            Swal.fire({ 
+                title: 'Pengajuan Berhasil!', 
+                text: 'Berhasil mengirimkan ' + jumlah + ' berkas pengajuan aset ke antrean verifikasi instruktur laboratorium.', 
+                icon: 'success', 
+                confirmButtonColor: '#1e6f65' 
+            }).then(() => { 
+                window.history.replaceState({}, document.title, window.location.pathname); 
+            });
         } else if (statusParam === 'gagal_pinjam') {
-            Swal.fire({ title: 'Gagal!', text: 'Gagal memproses pengajuan ke database.', icon: 'error', confirmButtonColor: '#1e6f65' }).then(() => { window.history.replaceState({}, document.title, window.location.pathname); });
+            Swal.fire({ 
+                title: 'Sistem Gagal!', 
+                text: 'Gagal memproses dan mendaftarkan formulir pengajuan ke dalam database.', 
+                icon: 'error', 
+                confirmButtonColor: '#1e6f65' 
+            }).then(() => { 
+                window.history.replaceState({}, document.title, window.location.pathname); 
+            });
         }
     </script>
 

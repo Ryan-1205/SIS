@@ -146,15 +146,15 @@ $total_halaman = ceil($total_data / $limit);
                     
                     $is_in_cart = (isset($_SESSION['keranjang']) && in_array($id_barang, $_SESSION['keranjang'])) ? true : false;
                     
-                    if (!empty($row['foto']) && file_exists("../assets/img/" . $row['foto'])) {
-                        $gambar_tampil = "../assets/img/" . $row['foto'];
+                    if (!empty($row['foto']) && file_exists("../assets/img/barang/" . $row['foto'])) {
+                        $gambar_tampil = "../assets/img/barang/" . $row['foto'];
                     } else {
                         switch ($kategori_barang) {
                             case 1: $gambar_tampil = "../assets/img/logoberangkat.png"; break;
                             case 2: $gambar_tampil = "../assets/img/logodkv.png"; break;
-                            case 3: $gambar_tampil = "../assets/img/logomm.png"; break;
+                            case 3: $gambar_tampil = "../assets/img/logodkv.png"; break;
                             case 4: $gambar_tampil = "../assets/img/logoanm.png"; break;
-                            default: $gambar_tampil = "../assets/img/logomm.png"; break;
+                            default: $gambar_tampil = "../assets/img/logoberangkat.png"; break;
                         }
                     }
             ?>

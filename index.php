@@ -26,7 +26,7 @@ session_start();
                 <div class="col-md-3">
                     <a href="siswa/list_barang.php?kat=1" class="card-category">
                         <div class="white-box">
-                            <img src="assets/img/logoberangkat.png" alt="Logo Tim Berangkat">
+                            <img src="assets/img/logo/logoberangkat.png" alt="Logo Tim Berangkat">
                         </div>
                         <div class="category-name">
                             Aset <strong>Tim Berangkat</strong>
@@ -37,7 +37,7 @@ session_start();
                 <div class="col-md-3">
                     <a href="siswa/list_barang.php?kat=2" class="card-category">
                         <div class="white-box">
-                            <img src="assets/img/logodkv.png" alt="Logo DKV 1">
+                            <img src="assets/img/logo/logodkv.png" alt="Logo DKV 1">
                         </div>
                         <div class="category-name">
                             Aset <strong>Lab DKV 1</strong>
@@ -48,7 +48,7 @@ session_start();
                 <div class="col-md-3">
                     <a href="siswa/list_barang.php?kat=3" class="card-category">
                         <div class="white-box">
-                            <img src="assets/img/logodkv.png" alt="Logo DKV 2">
+                            <img src="assets/img/logo/logodkv.png" alt="Logo DKV 2">
                         </div>
                         <div class="category-name">
                             Aset <strong>Lab DKV 2</strong>
@@ -59,7 +59,7 @@ session_start();
                 <div class="col-md-3">
                     <a href="siswa/list_barang.php?kat=4" class="card-category">
                         <div class="white-box">
-                            <img src="assets/img/logoanm.png" alt="Logo Animasi">
+                            <img src="assets/img/logo/logoanm.png" alt="Logo Animasi">
                         </div>
                         <div class="category-name">
                             Aset <strong>Lab Animasi</strong>

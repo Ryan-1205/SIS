@@ -17,48 +17,95 @@ if (isset($_POST['pengawas']) && isset($_POST['status_item'])) {
     $sukses_count = 0;
     $gagal_count  = 0;
 
-    // LOOPING KEPUTUSAN BARANG SELEKTIF
-    foreach ($status_item as $id_pinjam => $keputusan) {
-        $id_pinjam = mysqli_real_escape_string($conn, $id_pinjam);
-        $keputusan = mysqli_real_escape_string($conn, $keputusan);
+    // 🔥 Proteksi Integritas Data: Mulai transaksi database
+    mysqli_begin_transaction($conn);
 
-        // 1. Jalankan kueri update status transaksi pada tabel peminjaman
-        $query_update = "UPDATE peminjaman 
-                         SET status_pengajuan = '$keputusan', diverifikasi_oleh = '$pengawas' 
-                         WHERE id_pinjam = '$id_pinjam' AND status_pengajuan = 'pending'";
-        
-        if (mysqli_query($conn, $query_update)) {
-            $sukses_count++;
+    try {
+        // LOOPING KEPUTUSAN BARANG SELEKTIF
+        foreach ($status_item as $id_pinjam => $keputusan) {
+            $id_pinjam = mysqli_real_escape_string($conn, $id_pinjam);
+            $keputusan = mysqli_real_escape_string($conn, $keputusan);
 
-            // 🛠️ SINKRONISASI LOGISTIK SAKTI: Jika admin menyetujui, ubah status barang menjadi 'dipinjam'
             if ($keputusan === 'disetujui') {
-                // Ambil id_barang terlebih dahulu dari record peminjaman terkait
-                $query_cari_barang = mysqli_query($conn, "SELECT id_barang FROM peminjaman WHERE id_pinjam = '$id_pinjam'");
-                if ($data_barang = mysqli_fetch_assoc($query_cari_barang)) {
+                // 1. Ambil id_barang terlebih dahulu dari record peminjaman terkait
+                $query_cari_barang = mysqli_query($conn, "SELECT id_barang FROM peminjaman WHERE id_pinjam = '$id_pinjam' AND status_pengajuan = 'pending'");
+                $data_barang = mysqli_fetch_assoc($query_cari_barang);
+
+                if ($data_barang) {
                     $id_barang_terkait = $data_barang['id_barang'];
+
+                    // 2. JALUR PROTEKSI CONCURRENCY: Cek realtime apakah barang ini sudah terlanjur berstatus 'dipinjam'
+                    $cek_status_barang = mysqli_query($conn, "SELECT id_barang FROM barang WHERE id_barang = '$id_barang_terkait' AND status = 'dipinjam'");
+                    if (mysqli_num_rows($cek_status_barang) > 0) {
+                        // Jika sudah 'dipinjam', otomatis paksa pengajuan ini menjadi 'ditolak' dan isi catatan ke kolom keperluan
+                        mysqli_query($conn, "UPDATE peminjaman 
+                                             SET status_pengajuan = 'ditolak', 
+                                                 diverifikasi_oleh = '$pengawas',
+                                                 keperluan = 'Otomatis Ditolak: Barang sudah dibawa peminjam lain.' 
+                                             WHERE id_pinjam = '$id_pinjam'");
+                        $sukses_count++;
+                        continue; // Langsung lompat ke baris iterasi item barang berikutnya
+                    }
+
+                    // 3. Jalankan kueri update status transaksi utama menjadi 'disetujui'
+                    // Menggunakan kolom 'diverifikasi_oleh' sesuai database asli lu
+                    $query_update = "UPDATE peminjaman 
+                                     SET status_pengajuan = 'disetujui', diverifikasi_oleh = '$pengawas' 
+                                     WHERE id_pinjam = '$id_pinjam' AND status_pengajuan = 'pending'";
                     
-                    // Kunci status barang agar tidak bisa dipilih siswa lain sementara waktu
-                    mysqli_query($conn, "UPDATE barang SET status = 'dipinjam' WHERE id_barang = '$id_barang_terkait'");
+                    if (mysqli_query($conn, $query_update)) {
+                        $sukses_count++;
+
+                        // 4. SINKRONISASI LOGISTIK: Ubah status barang menjadi 'dipinjam'
+                        mysqli_query($conn, "UPDATE barang SET status = 'dipinjam' WHERE id_barang = '$id_barang_terkait'");
+
+                        // 5. 🔥 LOGIKA AUTO-REJECT DOUBLE BOOKING: 
+                        // Otomatis ubah semua status pengajuan pending lain dengan barang yang sama menjadi 'ditolak'
+                        mysqli_query($conn, "UPDATE peminjaman 
+                                             SET status_pengajuan = 'ditolak', 
+                                                 diverifikasi_oleh = '$pengawas',
+                                                 keperluan = 'Otomatis Ditolak: Barang sudah disetujui untuk peminjam lain.'
+                                             WHERE id_barang = '$id_barang_terkait' 
+                                               AND status_pengajuan = 'pending' 
+                                               AND id_pinjam != '$id_pinjam'");
+                    } else {
+                        $gagal_count++;
+                    }
+                } else {
+                    $gagal_count++;
+                }
+            } else {
+                // 6. Jalankan kueri update jika admin memilih opsi 'ditolak' secara manual sejak awal
+                $query_update_tolak = "UPDATE peminjaman 
+                                       SET status_pengajuan = 'ditolak', diverifikasi_oleh = '$pengawas' 
+                                       WHERE id_pinjam = '$id_pinjam' AND status_pengajuan = 'pending'";
+                if (mysqli_query($conn, $query_update_tolak)) {
+                    $sukses_count++;
+                } else {
+                    $gagal_count++;
                 }
             }
-        } else {
-            $gagal_count++;
         }
+
+        // Jika semua perulangan query sukses dieksekusi, komit data secara permanen
+        mysqli_commit($conn);
+
+    } catch (Exception $e) {
+        // Jika ada kegagalan tak terduga, batalkan semua perubahan data (Rollback)
+        mysqli_rollback($conn);
+        $gagal_count++;
     }
 
-    // Tampilkan notifikasi umpan balik hasil eksekusi admin ke file interface yang baru
+    // Tampilkan notifikasi umpan balik hasil eksekusi admin
     if ($gagal_count == 0) {
-        // Redirect dengan membawa status sukses verifikasi dan nama pengawas
         header("Location: admin_verifikasi_peminjaman.php?status=sukses_verif&pengawas=" . urlencode($pengawas));
         exit;
     } else {
-        // Redirect membawa info kuantitas log data sukses dan gagal secara parsial
         header("Location: admin_verifikasi_peminjaman.php?status=parsial_verif&sukses=$sukses_count&gagal=$gagal_count");
         exit;
     }
 
 } else {
-    // Balikkan jika admin mencoba nembak file tanpa kirim data form
     header("Location: admin_verifikasi_peminjaman.php");
     exit;
 }

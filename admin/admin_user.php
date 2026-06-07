@@ -77,6 +77,20 @@ $total_halaman = ceil($total_data / $limit);
         
         .pagination .page-link { color: var(--tosca-tua); border-color: var(--tosca-muda); }
         .pagination .page-item.active .page-link { background-color: var(--tosca-tua); border-color: var(--tosca-tua); color: white; }
+
+        /* Style Kursor untuk Foto Thumbnail */
+        .img-user-thumb {
+            width: 40px; 
+            height: 40px; 
+            object-fit: cover; 
+            border-radius: 50px; 
+            border: 2px solid var(--tosca-tua);
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        .img-user-thumb:hover {
+            transform: scale(1.1);
+        }
     </style>
 </head>
 <body>
@@ -163,7 +177,7 @@ $total_halaman = ceil($total_data / $limit);
                                 $nis_tampil = htmlspecialchars($row['nis']);
                             }
 
-                            $gambar_wajah = (!empty($row['foto_resmi']) && file_exists("../assets/img/" . $row['foto_resmi'])) ? "../assets/img/" . $row['foto_resmi'] : "../assets/img/default_user.jpg";
+                            $gambar_wajah = (!empty($row['foto_resmi']) && file_exists("../assets/img/pengguna/" . $row['foto_resmi'])) ? "../assets/img/pengguna/" . $row['foto_resmi'] : "../assets/img/pengguna/default_user.jpg";
                     ?>
                     <tr id="row_<?= $id_u; ?>">
                         <td class="col-select-master">
@@ -205,7 +219,7 @@ $total_halaman = ceil($total_data / $limit);
                         </td>
 
                         <td>
-                            <img src="<?= $gambar_wajah; ?>" alt="Preview" class="view-mode" style="width: 40px; height: 40px; object-fit: cover; border-radius: 50px; border: 2px solid var(--tosca-tua);">
+                            <img src="<?= $gambar_wajah; ?>" alt="Preview" class="view-mode img-user-thumb tombol-foto-popup" data-nama="<?= htmlspecialchars($row['nama_lengkap']) ?>" data-src="<?= $gambar_wajah; ?>">
                             <input type="file" class="form-control inline-input edit-mode d-none" id="input_foto_<?= $id_u; ?>" accept="image/*" style="font-size: 11px; max-width: 140px; margin: 0 auto;">
                         </td>
                         
@@ -261,6 +275,20 @@ $total_halaman = ceil($total_data / $limit);
         <?php endif; ?>
     </div>
 
+    <div class="modal fade" id="modalFotoUser" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-md" style="max-width: 450px;">
+            <div class="modal-content" style="border: 2px solid var(--tosca-tua); border-radius: 20px;">
+                <div class="modal-header text-white" style="background-color: var(--tosca-tua); border-top-left-radius: 17px; border-top-right-radius: 17px;">
+                    <h6 class="modal-title fw-bold" id="title_nama_user">Potret Acuan Biometrik</h6>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-3 text-center bg-dark rounded-bottom-4">
+                    <img id="img_popup_user_besar" src="" class="img-fluid rounded-3 border border-secondary shadow-lg" style="width: 100%; max-height: 480px; object-fit: contain;" alt="Gagal Memuat Gambar">
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="modal fade" id="modalTambahUser" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content" style="border: 2px solid var(--tosca-tua); border-radius: 20px;">
@@ -310,6 +338,21 @@ $total_halaman = ceil($total_data / $limit);
 
     <script src="../assets/bootstrap-5.3.8-dist/js/bootstrap.bundle.min.js"></script>
     <script>
+        // SCRIPT TRIGGER POPUP FOTO USER
+        const tombolFotoUser = document.querySelectorAll('.tombol-foto-popup');
+        const modalFotoUserBS = new bootstrap.Modal(document.getElementById('modalFotoUser'));
+
+        tombolFotoUser.forEach(img => {
+            img.addEventListener('click', function() {
+                const srcGambar = this.getAttribute('data-src');
+                const namaUser = this.getAttribute('data-nama');
+                
+                document.getElementById('title_nama_user').innerText = "👤 Acuan Wajah: " + namaUser;
+                document.getElementById('img_popup_user_besar').setAttribute('src', srcGambar);
+                modalFotoUserBS.show();
+            });
+        });
+
         document.getElementById('changeLimit').addEventListener('change', function() {
             const selectedLimit = this.value;
             const searchVal = "<?= urlencode($search) ?>";

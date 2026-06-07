@@ -31,15 +31,15 @@ if (isset($_POST['id_user'])) {
         $foto_nama_baru = "user_master_" . time() . "_" . $id . "." . $foto_ext;
         
         // 🔥 FIX JALUR: Mundur satu folder agar file masuk ke folder utama assets/img/
-        $target_path = "../assets/img/" . $foto_nama_baru;
+        $target_path = "../assets/img/pengguna/" . $foto_nama_baru;
 
         // Pindahkan file dari temp_name ke folder assets/img
         if (move_uploaded_file($file_foto['tmp_name'], $target_path)) {
             // Jika berhasil upload foto baru, hapus berkas fisik foto lama (kecuali gambar default)
             // 🔥 FIX JALUR: Tambahkan ../ pada fungsi pengecekan file_exists dan unlink
-            if (!empty($foto_lama) && file_exists("../assets/img/" . $foto_lama)) {
+            if (!empty($foto_lama) && file_exists("../assets/img/pengguna/" . $foto_lama)) {
                 if ($foto_lama != "default_user.jpg") {
-                    unlink("../assets/img/" . $foto_lama); // Hapus berkas lama biar hosting gak penuh
+                    unlink("../assets/img/pengguna/" . $foto_lama); // Hapus berkas lama biar hosting gak penuh
                 }
             }
         }

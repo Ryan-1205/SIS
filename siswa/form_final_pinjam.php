@@ -68,8 +68,8 @@ if (isset($_POST['item_pilihan']) && isset($_POST['tgl_pinjam']) && isset($_POST
     // Generate nama file unik untuk bukti otentikasi wajah saat meminjam barang
     $nama_bukti_wajah = "bukti_pinjam_" . $id_user . "_" . time() . ".jpg";
     
-    // REVISI JALUR FOTO: Ditambahkan ../ agar file gambar fisik masuk ke folder assets utama di root luar
-    $target_folder    = "../assets/img/" . $nama_bukti_wajah;
+    // REVISI ALAMAT: Ditambahkan '/' setelah nama folder agar file tersimpan di dalam folder bukti_pinjam/
+    $target_folder    = "../assets/img/bukti_pinjam/" . $nama_bukti_wajah;
 
     // Simpan gambar biner ke folder lokal dengan kualitas kompresi optmial (75%)
     $simpan_gambar = imagejpeg($image, $target_folder, 75);
@@ -107,6 +107,7 @@ if (isset($_POST['item_pilihan']) && isset($_POST['tgl_pinjam']) && isset($_POST
         exit;
     } else {
         // Jika query ke database gagal, hapus file gambar bukti yang telanjur tersimpan agar server bersih
+        // (Alamat target_folder di sini otomatis ikut benar mengikuti perbaikan di atas)
         if (file_exists($target_folder)) {
             unlink($target_folder);
         }
@@ -117,4 +118,4 @@ if (isset($_POST['item_pilihan']) && isset($_POST['tgl_pinjam']) && isset($_POST
     header("Location: list_pinjam.php");
     exit;
 }
-?>
+?>  

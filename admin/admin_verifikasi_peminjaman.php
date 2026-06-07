@@ -52,6 +52,20 @@ if ($current_admin_role === 'admin') {
         .btn-verif { background-color: var(--tosca-tua); color: white; border: none; padding: 6px 20px; border-radius: 20px; font-weight: 600; font-size: 13px; text-decoration: none; display: inline-block; cursor: pointer; }
         .btn-verif:hover { background-color: #14433e; color: white; }
         .badge-waiting { background-color: #ffc107; color: #212529; padding: 5px 12px; border-radius: 15px; font-size: 13px; font-weight: 600; display: inline-block; }
+
+        /* Desain Thumbnail Foto Biometrik */
+        .img-biometrik-thumb {
+            width: 45px;
+            height: 45px;
+            object-fit: cover;
+            border-radius: 8px;
+            border: 2px solid var(--tosca-tua);
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        .img-biometrik-thumb:hover {
+            transform: scale(1.1);
+        }
     </style>
 </head>
 <body>
@@ -70,10 +84,10 @@ if ($current_admin_role === 'admin') {
                 <thead>
                     <tr>
                         <th class="py-3 px-3 text-start" style="padding-left: 20px !important;">NAMA PEMINJAM</th>
-                        <th class="py-3 px-3 text-center" width="200">WAKTU PINJAM</th>
-                        <th class="py-3 px-3 text-center" width="200">RENCANA KEMBALI</th> 
+                        <th class="py-3 px-3 text-center">BIOMETRIK</th>
+                        <th class="py-3 px-3 text-center" width="180">WAKTU PINJAM</th>
+                        <th class="py-3 px-3 text-center" width="180">RENCANA KEMBALI</th> 
                         <th class="py-3 px-3 text-center">DETAIL BARANG</th>
-                        <th class="py-3 px-3 text-center">STATUS</th>
                         <th class="py-3 px-3 text-center">AKSI</th>
                     </tr>
                 </thead>
@@ -81,7 +95,8 @@ if ($current_admin_role === 'admin') {
                     <?php 
                     $where_clause = ($current_admin_role === 'admin') ? "WHERE peminjaman.status_pengajuan = 'pending'" : "WHERE peminjaman.status_pengajuan = 'pending' AND barang.id_kategori = '$id_kategori_admin'";
 
-                    $query = "SELECT peminjaman.tgl_pinjam, peminjaman.tgl_kembali_rencana, peminjaman.id_user, users.nama_lengkap,
+                    // MODIFIKASI QUERY: Menarik data bukti_wajah untuk validasi visual admin
+                    $query = "SELECT peminjaman.tgl_pinjam, peminjaman.tgl_kembali_rencana, peminjaman.id_user, users.nama_lengkap, peminjaman.bukti_wajah,
                                      MIN(peminjaman.id_pinjam) as order_id,
                                      GROUP_CONCAT(barang.nama_barang ORDER BY peminjaman.id_pinjam ASC SEPARATOR '||') as list_barang,
                                      GROUP_CONCAT(peminjaman.id_pinjam ORDER BY peminjaman.id_pinjam ASC SEPARATOR ',') as list_id_pinjam,
@@ -103,9 +118,17 @@ if ($current_admin_role === 'admin') {
                             
                             $no_hp_tampil = (!empty($arr_no_hp[0]) && $arr_no_hp[0] !== '-') ? $arr_no_hp[0] : 'Tidak Diisi Peminjam';
                             $keperluan_tampil = (!empty($arr_keperluan[0]) && $arr_keperluan[0] !== '-') ? $arr_keperluan[0] : 'Tidak ada deskripsi keperluan';
+                            
+                            // Penentuan file gambar biometrik wajah siswa
+                            $foto_bukti = (!empty($row['bukti_wajah']) && file_exists("../assets/img/bukti_pinjam/" . $row['bukti_wajah'])) ? "../assets/img/bukti_pinjam/" . $row['bukti_wajah'] : "../assets/img/default_user.jpg";
                     ?>
                     <tr>
                         <td class="fw-bold text-dark px-3 text-start" style="padding-left: 20px !important;"><?= htmlspecialchars($row['nama_lengkap']) ?></td>
+                        
+                        <td class="text-center">
+                            <img src="<?= $foto_bukti; ?>" class="img-biometrik-thumb tombol-foto-popup" data-nama="<?= htmlspecialchars($row['nama_lengkap']) ?>" data-src="<?= $foto_bukti; ?>" alt="Wajah">
+                        </td>
+
                         <td class="font-monospace text-secondary text-center" style="font-size:13px;"><?= date('d M Y, H:i', strtotime($row['tgl_pinjam'])) ?> WIB</td>
                         <td class="font-monospace text-danger fw-bold text-center" style="font-size:13px;"><?= date('d M Y, H:i', strtotime($row['tgl_kembali_rencana'])) ?> WIB</td>
                         <td class="text-center">
@@ -115,7 +138,6 @@ if ($current_admin_role === 'admin') {
                                 🔍 Lihat Barang
                             </button>
                         </td>
-                        <td class="text-center"><span class="badge-waiting">Pending</span></td>
                         <td class="text-center">
                             <button type="button" class="btn-verif tombol-setuju" 
                                     data-user="<?= $row['id_user'] ?>" 
@@ -156,6 +178,20 @@ if ($current_admin_role === 'admin') {
         </div>
     </div>
 
+    <div class="modal fade" id="modalFotoBukti" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-sm" style="max-width: 800px;">
+            <div class="modal-content" style="border: 2px solid var(--tosca-tua); border-radius: 20px;">
+                <div class="modal-header text-white" style="background-color: var(--tosca-tua); border-top-left-radius: 17px; border-top-right-radius: 17px;">
+                    <h6 class="modal-title fw-bold" id="title_nama_bukti">Potret Otentikasi Wajah</h6>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-3 text-center bg-dark rounded-bottom-4">
+                    <img id="img_popup_besar" src="" class="img-fluid rounded-3 border border-secondary shadow-lg" style="width: 100%; max-height: 450px; object-fit: contain;" alt="Otentikasi Gagal">
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="modal fade" id="modalVerifikasi" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered modal-lg">
             <div class="modal-content" style="border: 2px solid var(--tosca-tua); border-radius: 20px;">
@@ -163,7 +199,6 @@ if ($current_admin_role === 'admin') {
                     <h5 class="modal-title text-white fw-bold">⚙️ Verifikasi Selektif Barang</h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                
                 <form action="admin_verifikasi_proses_peminjaman.php" method="POST">
                     
                     <input type="hidden" name="pengawas" value="<?= htmlspecialchars($nama_admin_login); ?>">
@@ -208,6 +243,21 @@ if ($current_admin_role === 'admin') {
 
     <script src="../assets/bootstrap-5.3.8-dist/js/bootstrap.bundle.min.js"></script>
     <script>
+        // TRIGGER SCRIPT MODAL POPUP GAMBAR BESAR
+        const tombolFoto = document.querySelectorAll('.tombol-foto-popup');
+        const modalFotoBS = new bootstrap.Modal(document.getElementById('modalFotoBukti'));
+
+        tombolFoto.forEach(img => {
+            img.addEventListener('click', function() {
+                const srcGambar = this.getAttribute('data-src');
+                const namaSiswa = this.getAttribute('data-nama');
+                
+                document.getElementById('title_nama_bukti').innerText = "🛡️ Bukti Wajah: " + namaSiswa;
+                document.getElementById('img_popup_besar').setAttribute('src', srcGambar);
+                modalFotoBS.show();
+            });
+        });
+
         const tombolDetail = document.querySelectorAll('.tombol-detail');
         const modalDetailBS = new bootstrap.Modal(document.getElementById('modalDetail'));
         

@@ -14,37 +14,26 @@ $prefix_footer = ($current_dir_footer === 'admin') ? '../' : '';
     <div class="safe-container py-5 px-4">
         <div class="row gy-4 justify-content-between">
             
-            <!-- Kolom 1: Brand & Keterangan Sistem -->
-            <div class="col-lg-5 col-md-12">
+            <div class="col-lg-4 col-md-12">
                 <h5 class="footer-brand mb-3">SIS <span class="brand-sub-footer">| Sixseven Inventory System</span></h5>
                 <p class="footer-desc mb-0">
                     Sistem otomasi manajemen, pelacakan, dan verifikasi sirkulasi aset inventaris laboratorium berbasis biometrik resmi untuk efisiensi ekosistem akademis.
                 </p>
             </div>
             
-            <!-- Kolom 2: Navigasi Cepat Mandiri -->
-            <div class="col-lg-3 col-md-6">
-                <h6 class="footer-section-title mb-3">Tautan Pintas</h6>
-                <ul class="list-unstyled footer-links m-0 p-0">
-                    <?php if (isset($_SESSION['id_user'])) : ?>
-                        <?php if (strpos($_SESSION['role'], 'admin') !== false) : ?>
-                            <li><a href="<?= $prefix_footer; ?>admin/admin_user.php">👥 Manajemen User</a></li>
-                            <li><a href="<?= $prefix_footer; ?>admin/admin_barang.php">📦 Data Barang</a></li>
-                            <li><a href="<?= $prefix_footer; ?>admin/admin_peminjam.php">📍 Log Peminjaman</a></li>
-                        <?php else : ?>
-                            <li><a href="<?= $prefix_footer; ?>index.php">🖥️ Katalog Utama</a></li>
-                            <li><a href="<?= $prefix_footer; ?>list_pinjam.php">📥 Riwayat Pinjam</a></li>
-                            <li><a href="<?= $prefix_footer; ?>list_kembali.php">🔄 Pengembalian</a></li>
-                        <?php endif; ?>
-                    <?php else : ?>
-                        <li><a href="<?= $prefix_footer; ?>login.php">🚪 Gerbang Masuk</a></li>
-                        <li><a href="<?= $prefix_footer; ?>register.php">📝 Registrasi Biometrik</a></li>
-                    <?php endif; ?>
+            <div class="col-lg-3 col-md-4">
+                <h6 class="footer-section-title mb-3">Tim Pengembang</h6>
+                <ul class="list-unstyled footer-developer-list m-0 p-0">
+                    <li>💻 <strong>Ryan Ardiansyah</strong> <span class="dev-nim">(2407431002)</span></li>
+                    <li>💻 <strong>Bimo Refka A. S.</strong> <span class="dev-nim">(2407431004)</span></li>
+                    <li>💻 <strong>Fikry Aries Ariansyah</strong> <span class="dev-nim">(2407431026)</span></li>
                 </ul>
+                <div class="mt-2 text-info-kampus">
+                    PNJ • TIK • Teknik Multimedia Digital
+                </div>
             </div>
             
-            <!-- Kolom 3: Informasi Sesi & Status Akses -->
-            <div class="col-lg-3 col-md-6">
+            <div class="col-lg-3 col-md-4">
                 <h6 class="footer-section-title mb-3">Status Autentikasi</h6>
                 <div class="footer-status-card p-3 rounded-3">
                     <?php if (isset($_SESSION['id_user'])) : ?>
@@ -63,10 +52,9 @@ $prefix_footer = ($current_dir_footer === 'admin') ? '../' : '';
         
         <hr class="footer-divider my-4">
         
-        <!-- Baris Paling Bawah: Hak Cipta -->
         <div class="d-flex flex-md-row flex-column justify-content-between align-items-center gap-2">
-            <p class="footer-copyright mb-0">© 2026 <strong>SIS Project</strong>. Hak Cipta Dilindungi Undang-Undang.</p>
-            <p class="footer-version mb-0">Versi Sistem Aplikasi 2.8</p>
+            <p class="footer-copyright mb-0">© 2026 <strong>SIS Project</strong> </p>
+            <p class="footer-version mb-0">Versi Sistem Aplikasi 1.0</p>
         </div>
     </div>
 </footer>
@@ -128,6 +116,28 @@ $prefix_footer = ($current_dir_footer === 'admin') ? '../' : '';
     .footer-links a:hover {
         color: #ffffff;
         transform: translateX(4px); /* Efek bergeser halus saat hover */
+    }
+
+    /* Styling Bagian Developer Info */
+    .footer-developer-list li {
+        font-size: 13px;
+        color: #ffffff;
+        margin-bottom: 8px;
+    }
+    .dev-nim {
+        color: #8dafa9;
+        font-size: 12px;
+        font-family: monospace;
+    }
+    .text-info-kampus {
+        font-size: 11px;
+        font-weight: 600;
+        color: #a4d4cc;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+        padding-top: 8px;
+        display: inline-block;
     }
 
     /* Kotak Status Akses */

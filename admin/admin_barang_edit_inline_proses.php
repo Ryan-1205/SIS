@@ -3,8 +3,8 @@ session_start();
 // Penyesuaian Jalur: Mundur satu folder untuk memuat konfigurasi database
 include '../koneksi.php';
 
-// Validasi hak akses admin berdasarkan awalan kata 'admin_' pada role session
-if (!isset($_SESSION['id_user']) || strpos($_SESSION['role'], 'admin_') === false) { 
+// Validasi hak akses admin (Mendukung role 'admin' global maupun 'admin_lab')
+if (!isset($_SESSION['id_user']) || strpos($_SESSION['role'], 'admin') === false) { 
     exit; 
 }
 
@@ -26,13 +26,17 @@ if (isset($_POST['id_barang'])) {
         $foto_ext = strtolower(pathinfo($foto_file['name'], PATHINFO_EXTENSION));
         $foto_nama_baru = time() . "_" . $id . "." . $foto_ext;
         
-        // Penyesuaian Jalur: Unggah berkas gambar ke direktori assets di luar folder admin/
-        if (move_uploaded_file($foto_file['tmp_name'], "../assets/img/" . $foto_nama_baru)) {
-            // Penyesuaian Jalur: Melakukan pengecekan dan penghapusan gambar lama dari folder yang tepat
-            if (!empty($foto_lama) && file_exists("../assets/img/" . $foto_lama)) {
-                // Proteksi gambar bawaan agar tidak tidak terhapus dari sistem
+        // REVISI JALUR: Ditambahkan '/' setelah barang agar masuk ke subfolder barang/
+        $target_upload = "../assets/img/barang/" . $foto_nama_baru;
+        
+        if (move_uploaded_file($foto_file['tmp_name'], $target_upload)) {
+            // REVISI JALUR: Pengecekan dan penghapusan foto lama diselaraskan ke subfolder barang/
+            $jalur_foto_lama = "../assets/img/barang/" . $foto_lama;
+            
+            if (!empty($foto_lama) && file_exists($jalur_foto_lama)) {
+                // Proteksi gambar bawaan agar tidak terhapus dari sistem
                 if (!in_array($foto_lama, ["logoberangkat.png", "logodkv.png", "logomm.png", "logoanm.png"])) {
-                    unlink("../assets/img/" . $foto_lama);
+                    unlink($jalur_foto_lama);
                 }
             }
         }
