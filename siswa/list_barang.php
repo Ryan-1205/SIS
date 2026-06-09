@@ -139,12 +139,15 @@ $total_halaman = ceil($total_data / $limit);
                     $id_barang = $row['id_barang'];
                     $kategori_barang = $row['id_kategori'];
 
-                    $cek_disetujui = mysqli_query($conn, "SELECT status_pengajuan FROM peminjaman WHERE id_barang = '$id_barang' AND status_pengajuan = 'disetujui' LIMIT 1");
+                    // ================= FIX BUG SIRKULASI PENGEMBALIAN BARANG =================
+                    // Barang dianggap sedang tidak tersedia jika status transaksinya 'disetujui' ATAU sedang diajukan kembali ('pending_kembali')
+                    $cek_disetujui = mysqli_query($conn, "SELECT status_pengajuan FROM peminjaman WHERE id_barang = '$id_barang' AND status_pengajuan IN ('disetujui', 'pending_kembali') LIMIT 1");
                     $is_borrowed = (mysqli_num_rows($cek_disetujui) > 0) ? true : false;
 
+                    // Cek apakah barang ini adalah milik pengajuan pending baru saya (saat awal mau pinjam)
                     $cek_pending_saya = mysqli_query($conn, "SELECT status_pengajuan FROM peminjaman WHERE id_barang = '$id_barang' AND status_pengajuan = 'pending' AND id_user = '$id_user_login' LIMIT 1");
                     $is_waiting = (mysqli_num_rows($cek_pending_saya) > 0) ? true : false;
-                    
+                    // =========================================================================
                     $is_in_cart = (isset($_SESSION['keranjang']) && in_array($id_barang, $_SESSION['keranjang'])) ? true : false;
                     
                     if (!empty($row['foto']) && file_exists("../assets/img/barang/" . $row['foto'])) {

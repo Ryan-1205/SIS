@@ -96,8 +96,24 @@ if (isset($_POST['daftar'])) {
         }
         .modal-content { border-radius: 15px; border: none; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
         .modal-header { background-color: #1d5c56; color: white; border-top-left-radius: 15px; border-top-right-radius: 15px; border-bottom: none; }
-        .btn-tosca { background-color: #1d5c56; color: white; border-radius: 8px; font-weight: 600; padding: 10px 30px; border: none; }
-        .btn-tosca:hover { opacity: 0.9; color: white; }
+        
+        /* Gaya dasar tombol Tosca */
+        .btn-tosca { 
+            background-color: #1d5c56 !important; 
+            color: #ffffff !important; 
+            border-radius: 8px; 
+            font-weight: 600; 
+            padding: 10px 30px; 
+            border: none;
+            transition: background-color 0.2s ease, opacity 0.2s ease;
+        }
+        
+        /* 🔥 PERBAIKAN UTAMA: Memaksa warna tetap solid dan kontras saat di-hover agar tidak memutih */
+        .btn-tosca:hover { 
+            background-color: #143f3b !important; /* Menggelap sedikit agar terasa efek hovernya */
+            color: #ffffff !important; 
+            opacity: 1 !important;
+        }
     </style>
 </head>
 <body>
@@ -133,21 +149,25 @@ if (isset($_POST['daftar'])) {
                         <button type="button" id="btnXClose" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close" onclick="stopWebcam()"></button>
                     </div>
                     <div class="modal-body p-4 text-center">
-                        <p class="text-muted small mb-3" id="petunjukModal">Posisikan wajah Anda tegak lurus di depan kamera sebagai acuan keamanan sistem biometrik.</p>
+                        <p class="text-muted small mb-3" id="petunjukModal">Posisikan wajah Anda pas di tengah frame, lalu klik tombol **Ambil Foto**.</p>
                         
-                        <div style="position: relative; width: 320px; height: 240px; margin: 0 auto; background: #000; border-radius: 12px; overflow: hidden; border: 2px solid var(--tosca-tua);">
+                        <div style="position: relative; width: 320px; height: 240px; margin: 0 auto 15px auto; background: #000; border-radius: 12px; overflow: hidden; border: 2px solid var(--tosca-tua);">
                             <video id="webcam" autoplay muted width="320" height="240" style="position: absolute; left:0; top:0; width: 100%; height: 100%; object-fit: cover; z-index: 1;"></video>
                             
                             <canvas id="previewFoto" style="position: absolute; left:0; top:0; width: 100%; height: 100%; object-fit: cover; z-index: 3; display: none;"></canvas>
                             
-                            <div id="scanStatus" class="text-white p-2 d-flex align-items-center justify-content-center text-center" style="position: absolute; width:100%; height:100%; background: rgba(0,0,0,0.75); font-size: 13px; left:0; top:0; z-index: 5;">
+                            <div id="scanStatus" class="text-white p-2 d-flex align-items-center justify-content-center text-center" style="position: absolute; width:100%; height:100%; background: rgba(0,0,0,0.75); font-size: 13px; left:0; top:0; z-index: 5; display: flex;">
                                 Menginisialisasi modul kecerdasan buatan wajah... ⏳
                             </div>
                         </div>
+
+                        <div id="alertKameraBawah" class="alert alert-danger py-2 mt-3 text-center small d-none" role="alert"></div>
                     </div>
                     <div class="modal-footer border-0 justify-content-center pb-4 gap-2">
                         <button type="button" id="btnBatalModal" class="btn btn-secondary rounded-pill px-4" data-bs-dismiss="modal" onclick="stopWebcam()">Batal</button>
-                        <button type="submit" name="daftar" id="btnKirimFinal" class="btn text-white rounded-pill px-4 d-none" style="background-color: var(--tosca-tua);">Kirim Pendaftaran 🚀</button>
+                        <button type="button" id="btnJepret" class="btn btn-warning text-dark fw-bold rounded-pill px-4 d-none" onclick="ambilFotoManual()">📸 Ambil Foto</button>
+                        <button type="button" id="btnUlang" class="btn btn-danger text-white fw-bold rounded-pill px-4 d-none" onclick="ulangFotoKamera()">🔄 Foto Ulang</button>
+                        <button type="submit" name="daftar" id="btnKirimFinal" class="btn text-white fw-bold rounded-pill px-4 d-none" style="background-color: var(--tosca-tua);">Kirim Pendaftaran 🚀</button>
                     </div>
                 </div>
             </div>
@@ -180,16 +200,26 @@ if (isset($_POST['daftar'])) {
     <script>
         const modalKameraBS = new bootstrap.Modal(document.getElementById('modalKameraDaftar'));
         let streamWebcam = null;
-        let intervalScan = null;
+        let isFaceModelLoaded = false;
 
-        // Trigger kemunculan modal konfirmasi registrasi sukses formal
         document.addEventListener("DOMContentLoaded", function() {
             var modalElemen = document.getElementById('registrasiModal');
             if (modalElemen) {
                 var pemicuModal = new bootstrap.Modal(modalElemen);
                 pemicuModal.show();
             }
+            loadFaceAPIModels();
         });
+
+        async function loadFaceAPIModels() {
+            try {
+                await faceapi.nets.ssdMobilenetv1.loadFromUri('http://localhost/SIS/assets/models');
+                await faceapi.nets.faceLandmark68Net.loadFromUri('http://localhost/SIS/assets/models');
+                isFaceModelLoaded = true;
+            } catch (error) {
+                console.error("Gagal memuat model face-api:", error);
+            }
+        }
 
         function validasiTeksDanBukaKamera() {
             const nama = document.getElementById('reg_nama').value.trim();
@@ -208,14 +238,16 @@ if (isset($_POST['daftar'])) {
         function resetTampilanModal() {
             document.getElementById('judulModal').innerText = "🔒 Langkah Terakhir: Verifikasi Wajah";
             document.getElementById('petunjukModal').style.display = "block";
+            document.getElementById('petunjukModal').innerText = "Posisikan wajah Anda pas di tengah frame, lalu klik tombol Ambil Foto.";
             
             document.getElementById('btnKirimFinal').classList.add('d-none');
+            document.getElementById('btnUlang').classList.add('d-none');
+            document.getElementById('btnJepret').classList.add('d-none');
+            document.getElementById('alertKameraBawah').classList.add('d-none'); 
             
             const btnBatal = document.getElementById('btnBatalModal');
             btnBatal.classList.remove('d-none');
             btnBatal.innerText = "Batal";
-            btnBatal.setAttribute("onclick", "stopWebcam()");
-            btnBatal.className = "btn btn-secondary rounded-pill px-4";
             
             document.getElementById('btnXClose').style.display = "block";
             
@@ -227,89 +259,109 @@ if (isset($_POST['daftar'])) {
 
         function startWebcam() {
             const video = document.getElementById('webcam');
-            document.getElementById('scanStatus').style.background = "rgba(0,0,0,0.75)";
-            document.getElementById('scanStatus').innerText = "Menginisialisasi modul kecerdasan buatan wajah... ⏳";
+            const statusDiv = document.getElementById('scanStatus');
             
-            navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } })
+            statusDiv.style.setProperty('display', 'flex', 'important');
+            statusDiv.style.background = "rgba(0,0,0,0.85)";
+            statusDiv.innerText = "Menginisialisasi modul webcam... ⏳";
+            
+            navigator.mediaDevices.getUserMedia({ video: { facingMode: "user", width: 640, height: 480 } })
                 .then(stream => {
                     streamWebcam = stream;
                     video.srcObject = stream;
-                    initFaceAPI();
+                    
+                    video.onplaying = () => {
+                        statusDiv.style.setProperty('display', 'none', 'important');
+                        document.getElementById('btnJepret').classList.remove('d-none');
+                    };
                 })
                 .catch(err => {
-                    document.getElementById('scanStatus').innerHTML = "<span class='text-danger fw-bold'>❌ Gagal Mengakses Kamera!</span>";
+                    console.error(err);
+                    statusDiv.innerHTML = "<span class='text-danger fw-bold'>❌ Gagal Mengakses Kamera! Pastikan izin browser aktif.</span>";
                 });
         }
 
-        function stopWebcam() {
-            if (intervalScan) clearInterval(intervalScan);
-            if (streamWebcam) {
-                streamWebcam.getTracks().forEach(track => track.stop());
+        async function ambilFotoManual() {
+            const video = document.getElementById('webcam');
+            const canvasPreview = document.getElementById('previewFoto');
+            const statusDiv = document.getElementById('scanStatus');
+            const alertBawah = document.getElementById('alertKameraBawah');
+            
+            alertBawah.classList.add('d-none');
+
+            if (!isFaceModelLoaded) {
+                alertBawah.classList.remove('d-none');
+                alertBawah.innerText = "Sistem kecerdasan buatan sedang dimuat, harap tunggu beberapa detik.";
+                return;
+            }
+
+            statusDiv.style.setProperty('display', 'flex', 'important');
+            statusDiv.style.background = "rgba(0,0,0,0.6)";
+            statusDiv.innerHTML = "<span class='text-warning fw-bold'>Analisis sudut simetris wajah... 🔍</span>";
+
+            const detection = await faceapi.detectSingleFace(video).withFaceLandmarks();
+
+            if (detection) {
+                const landmarks = detection.landmarks;
+                const mataKiri  = landmarks.getLeftEye()[0];
+                const mataKanan = landmarks.getRightEye()[3];
+                const ujungHidung = landmarks.getNose()[6];
+
+                const jarakKeKiri  = Math.abs(ujungHidung.x - mataKiri.x);
+                const jarakKeKanan = Math.abs(mataKanan.x - ujungHidung.x);
+
+                const rasioSimetris = jarakKeKiri / jarakKeKanan;
+
+                if (rasioSimetris < 0.65 || rasioSimetris > 1.55) {
+                    statusDiv.style.setProperty('display', 'none', 'important');
+                    alertBawah.classList.remove('d-none');
+                    alertBawah.innerHTML = "<strong>❌ Posisi Wajah Salah!</strong> Kepala Anda terdeteksi miring/nyerong. Harap hadapkan muka bener-bener **lurus ke depan kamera** dengan simetris.";
+                    return; 
+                }
+
+                const vidWidth = video.videoWidth;
+                const vidHeight = video.videoHeight;
+
+                canvasPreview.width = vidWidth;
+                canvasPreview.height = vidHeight;
+                
+                const ctx = canvasPreview.getContext('2d');
+                ctx.drawImage(video, 0, 0, vidWidth, vidHeight);
+                
+                const dataURL = canvasPreview.toDataURL('image/jpeg', 0.92);
+                document.getElementById('snapshot_wajah').value = dataURL;
+
+                video.style.display = "none";
+                canvasPreview.style.display = "block";
+                statusDiv.style.setProperty('display', 'none', 'important');
+
+                document.getElementById('judulModal').innerText = "📸 Pratinjau Foto Verifikasi Anda";
+                document.getElementById('petunjukModal').innerText = "Pastikan potret tidak blur dan pas di tengah sebelum dikirim.";
+                document.getElementById('btnJepret').classList.add('d-none');
+                document.getElementById('btnXClose').style.display = "none";
+                document.getElementById('btnBatalModal').classList.add('d-none');
+                
+                document.getElementById('btnUlang').classList.remove('d-none');
+                document.getElementById('btnKirimFinal').classList.remove('d-none');
+            } else {
+                statusDiv.style.setProperty('display', 'none', 'important');
+                alertBawah.classList.remove('d-none');
+                alertBawah.innerHTML = "<strong>❌ Potret Gagal!</strong> Muka tidak terdeteksi atau blur. Hadap lurus, pastikan pencahayaan cukup, lalu klik ambil foto kembali.";
             }
         }
 
-        async function initFaceAPI() {
-            const statusDiv = document.getElementById('scanStatus');
-            try {
-                await faceapi.nets.ssdMobilenetv1.loadFromUri('http://localhost/SIS/assets/models');
-                statusDiv.innerHTML = "<span class='text-warning fw-bold'>📷 Menunggu pindaian wajah terdeteksi pada frame...</span>";
-                
-                const video = document.getElementById('webcam');
-                const canvasPreview = document.getElementById('previewFoto');
+        function ulangFotoKamera() {
+            document.getElementById('snapshot_wajah').value = "";
+            resetTampilanModal();
+            
+            const video = document.getElementById('webcam');
+            video.style.display = "block";
+            document.getElementById('btnJepret').classList.remove('d-none');
+        }
 
-                intervalScan = setInterval(async () => {
-                    if (video.paused || video.ended) return;
-                    
-                    const detection = await faceapi.detectSingleFace(video);
-                    
-                    if (detection) {
-                        const vidWidth = video.videoWidth;
-                        const vidHeight = video.videoHeight;
-
-                        if (vidWidth > 0 && vidHeight > 0) {
-                            canvasPreview.width = vidWidth;
-                            canvasPreview.height = vidHeight;
-                            
-                            const ctx = canvasPreview.getContext('2d');
-                            ctx.drawImage(video, 0, 0, vidWidth, vidHeight);
-                            
-                            const dataURL = canvasPreview.toDataURL('image/jpeg', 0.9);
-                            document.getElementById('snapshot_wajah').value = dataURL;
-                        }
-
-                        clearInterval(intervalScan);
-
-                        video.style.display = "none";
-                        canvasPreview.style.display = "block";
-
-                        canvasPreview.style.zIndex = "4"; 
-                        statusDiv.style.zIndex = "5"; 
-                        
-                        statusDiv.style.background = "transparent"; 
-                        
-                        document.getElementById('judulModal').innerText = "📸 Pratinjau Foto Verifikasi Anda";
-                        document.getElementById('petunjukModal').style.display = "none";
-                        
-                        statusDiv.innerHTML = "<div class='text-white fw-bold px-3 py-1 rounded-pill shadow-sm' style='background: #1e6f65; position: absolute; bottom: 10px; font-size: 12px; z-index: 6;'>🟢 Potret Wajah Berhasil Dikunci!</div>";
-                        
-                        document.getElementById('btnXClose').style.display = "none";
-                        document.getElementById('btnBatalModal').classList.add('d-none');
-                        document.getElementById('btnKirimFinal').classList.remove('d-none');
-
-                        setTimeout(() => {
-                            if (streamWebcam) {
-                                streamWebcam.getTracks().forEach(track => track.stop());
-                            }
-                        }, 300);
-
-                    } else {
-                        statusDiv.innerHTML = "<span class='text-warning fw-bold'>⚠️ Wajah tidak terdeteksi. Posisikan wajah menghadap lurus ke arah kamera.</span>";
-                    }
-                }, 700);
-
-            } catch (error) {
-                console.error(error);
-                statusDiv.innerText = "Gagal memuat arsitektur modul face-api lokal.";
+        function stopWebcam() {
+            if (streamWebcam) {
+                streamWebcam.getTracks().forEach(track => track.stop());
             }
         }
 
