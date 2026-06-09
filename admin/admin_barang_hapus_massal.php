@@ -39,7 +39,7 @@ if (isset($_POST['id_barang_pilihan']) && is_array($_POST['id_barang_pilihan']))
             // Penyesuaian Jalur: Memeriksa dan menghapus file foto fisik dari folder yang tepat
             if (file_exists("../assets/img/barang" . $nama_foto)) {
                 // Proteksi gambar logo bawaan sistem agar tidak ikut terhapus
-                if (!in_array($nama_foto, ["logoberangkat.png", "logodkv.png", "logomm.png", "logoanm.png"])) {
+                if (!in_array($nama_foto, ["logoberangkat.png", "logodkv.png", "logodkv.png", "logoanm.png"])) {
                     unlink("../assets/img/barang" . $nama_foto);
                 }
             }

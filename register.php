@@ -97,7 +97,6 @@ if (isset($_POST['daftar'])) {
         .modal-content { border-radius: 15px; border: none; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
         .modal-header { background-color: #1d5c56; color: white; border-top-left-radius: 15px; border-top-right-radius: 15px; border-bottom: none; }
         
-        /* Gaya dasar tombol Tosca */
         .btn-tosca { 
             background-color: #1d5c56 !important; 
             color: #ffffff !important; 
@@ -108,9 +107,8 @@ if (isset($_POST['daftar'])) {
             transition: background-color 0.2s ease, opacity 0.2s ease;
         }
         
-        /* 🔥 PERBAIKAN UTAMA: Memaksa warna tetap solid dan kontras saat di-hover agar tidak memutih */
         .btn-tosca:hover { 
-            background-color: #143f3b !important; /* Menggelap sedikit agar terasa efek hovernya */
+            background-color: #143f3b !important; 
             color: #ffffff !important; 
             opacity: 1 !important;
         }
@@ -281,6 +279,7 @@ if (isset($_POST['daftar'])) {
                 });
         }
 
+        // 🔥 MODUL BARU: PROTEKSI MULTI-FACE (WAJIB 1 WAJAH) & SIMETRIS POSE
         async function ambilFotoManual() {
             const video = document.getElementById('webcam');
             const canvasPreview = document.getElementById('previewFoto');
@@ -297,57 +296,69 @@ if (isset($_POST['daftar'])) {
 
             statusDiv.style.setProperty('display', 'flex', 'important');
             statusDiv.style.background = "rgba(0,0,0,0.6)";
-            statusDiv.innerHTML = "<span class='text-warning fw-bold'>Analisis sudut simetris wajah... 🔍</span>";
+            statusDiv.innerHTML = "<span class='text-warning fw-bold'>Menganalisis kuantitas & sudut wajah... 🔍</span>";
 
-            const detection = await faceapi.detectSingleFace(video).withFaceLandmarks();
+            // 1. Ambil deteksi massal untuk menghitung total wajah di dalam kamera frame
+            const allDetections = await faceapi.detectAllFaces(video).withFaceLandmarks();
 
-            if (detection) {
-                const landmarks = detection.landmarks;
-                const mataKiri  = landmarks.getLeftEye()[0];
-                const mataKanan = landmarks.getRightEye()[3];
-                const ujungHidung = landmarks.getNose()[6];
-
-                const jarakKeKiri  = Math.abs(ujungHidung.x - mataKiri.x);
-                const jarakKeKanan = Math.abs(mataKanan.x - ujungHidung.x);
-
-                const rasioSimetris = jarakKeKiri / jarakKeKanan;
-
-                if (rasioSimetris < 0.65 || rasioSimetris > 1.55) {
-                    statusDiv.style.setProperty('display', 'none', 'important');
-                    alertBawah.classList.remove('d-none');
-                    alertBawah.innerHTML = "<strong>❌ Posisi Wajah Salah!</strong> Kepala Anda terdeteksi miring/nyerong. Harap hadapkan muka bener-bener **lurus ke depan kamera** dengan simetris.";
-                    return; 
-                }
-
-                const vidWidth = video.videoWidth;
-                const vidHeight = video.videoHeight;
-
-                canvasPreview.width = vidWidth;
-                canvasPreview.height = vidHeight;
-                
-                const ctx = canvasPreview.getContext('2d');
-                ctx.drawImage(video, 0, 0, vidWidth, vidHeight);
-                
-                const dataURL = canvasPreview.toDataURL('image/jpeg', 0.92);
-                document.getElementById('snapshot_wajah').value = dataURL;
-
-                video.style.display = "none";
-                canvasPreview.style.display = "block";
-                statusDiv.style.setProperty('display', 'none', 'important');
-
-                document.getElementById('judulModal').innerText = "📸 Pratinjau Foto Verifikasi Anda";
-                document.getElementById('petunjukModal').innerText = "Pastikan potret tidak blur dan pas di tengah sebelum dikirim.";
-                document.getElementById('btnJepret').classList.add('d-none');
-                document.getElementById('btnXClose').style.display = "none";
-                document.getElementById('btnBatalModal').classList.add('d-none');
-                
-                document.getElementById('btnUlang').classList.remove('d-none');
-                document.getElementById('btnKirimFinal').classList.remove('d-none');
-            } else {
+            // Proteksi Lapis Pertama: Jika tidak ada objek sama sekali atau lebih dari satu orang terdeteksi
+            if (allDetections.length === 0) {
                 statusDiv.style.setProperty('display', 'none', 'important');
                 alertBawah.classList.remove('d-none');
-                alertBawah.innerHTML = "<strong>❌ Potret Gagal!</strong> Muka tidak terdeteksi atau blur. Hadap lurus, pastikan pencahayaan cukup, lalu klik ambil foto kembali.";
+                alertBawah.innerHTML = "<strong>❌ Potret Gagal!</strong> Wajah tidak terdeteksi. Posisikan muka menghadap lurus ke arah kamera.";
+                return;
+            } else if (allDetections.length > 1) {
+                statusDiv.style.setProperty('display', 'none', 'important');
+                alertBawah.classList.remove('d-none');
+                alertBawah.innerHTML = "<strong>❌ Proteksi Keamanan Terbuka!</strong> Terdeteksi ada <strong>" + allDetections.length + " wajah</strong> di dalam frame. Proses pendaftaran master wajib dilakukan mandiri oleh satu orang.";
+                return;
             }
+
+            // 2. Jika lolos (tepat ada 1 wajah), ambil indeks data pertama untuk pengujian struktur simetris
+            const detection = allDetections[0];
+            const landmarks = detection.landmarks;
+            const mataKiri  = landmarks.getLeftEye()[0];
+            const mataKanan = landmarks.getRightEye()[3];
+            const ujungHidung = landmarks.getNose()[6];
+
+            const jarakKeKiri  = Math.abs(ujungHidung.x - mataKiri.x);
+            const jarakKeKanan = Math.abs(mataKanan.x - ujungHidung.x);
+
+            const rasioSimetris = jarakKeKiri / jarakKeKanan;
+
+            // Proteksi Lapis Kedua: Uji orientasi kelayakan sudut (Frontal Pose Checking)
+            if (rasioSimetris < 0.65 || rasioSimetris > 1.55) {
+                statusDiv.style.setProperty('display', 'none', 'important');
+                alertBawah.classList.remove('d-none');
+                alertBawah.innerHTML = "<strong>❌ Posisi Wajah Salah!</strong> Kepala Anda terdeteksi miring/nyerong. Harap hadapkan muka bener-bener **lurus ke depan kamera** dengan simetris.";
+                return; 
+            }
+
+            // 3. Eksekusi penyimpanan data snapshot setelah lolos kedua lapis filter pengujian
+            const vidWidth = video.videoWidth;
+            const vidHeight = video.videoHeight;
+
+            canvasPreview.width = vidWidth;
+            canvasPreview.height = vidHeight;
+            
+            const ctx = canvasPreview.getContext('2d');
+            ctx.drawImage(video, 0, 0, vidWidth, vidHeight);
+            
+            const dataURL = canvasPreview.toDataURL('image/jpeg', 0.92);
+            document.getElementById('snapshot_wajah').value = dataURL;
+
+            video.style.display = "none";
+            canvasPreview.style.display = "block";
+            statusDiv.style.setProperty('display', 'none', 'important');
+
+            document.getElementById('judulModal').innerText = "📸 Pratinjau Foto Verifikasi Anda";
+            document.getElementById('petunjukModal').innerText = "Pastikan potret tidak blur dan pas di tengah sebelum dikirim.";
+            document.getElementById('btnJepret').classList.add('d-none');
+            document.getElementById('btnXClose').style.display = "none";
+            document.getElementById('btnBatalModal').classList.add('d-none');
+            
+            document.getElementById('btnUlang').classList.remove('d-none');
+            document.getElementById('btnKirimFinal').classList.remove('d-none');
         }
 
         function ulangFotoKamera() {
