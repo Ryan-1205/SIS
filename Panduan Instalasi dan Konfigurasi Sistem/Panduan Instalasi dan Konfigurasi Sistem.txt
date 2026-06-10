@@ -1,0 +1,76 @@
+Panduan Instalasi dan Konfigurasi Sistem
+
+Berikut adalah langkah-langkah untuk menjalankan **SixSeven Inventory System (SIS)** pada komputer lokal menggunakan XAMPP.
+
+1. Persiapan Perangkat Lunak
+
+Pastikan perangkat lunak berikut telah terpasang:
+
+* XAMPP
+* Web Browser (Google Chrome, Microsoft Edge, atau Mozilla Firefox)
+* Database MySQL
+* Source Code SIS
+
+
+2. Menjalankan XAMPP
+
+   a. Buka aplikasi **XAMPP Control Panel**.
+   b. Aktifkan modul:
+      *Apache*
+      *MySQL*
+   c. Pastikan kedua modul berjalan tanpa error.
+
+
+3. Mengimpor Database
+
+   1) Buka browser dan akses: http://localhost/phpmyadmin
+   2) Klik menu **New**.
+   3) Buat database baru dengan nama : sis_sixseven
+   4) Pilih database yang telah dibuat.
+   5) Klik menu **Import**.
+   6) Pilih file database `.sql` yang tersedia pada folder Database.
+   7) Klik tombol **Import**.
+   8) Tunggu hingga muncul notifikasi:Import has been successfully finished
+
+4. Mengaktifkan GD Extension
+
+Fitur verifikasi wajah pada SIS memerlukan **GD Extension** agar proses pengolahan gambar dapat berjalan dengan baik.
+
+   1) Buka xampp control panel, di Apache klik dan buka config PHP(php.ini)
+   2) Cari baris berikut:
+
+   ;extension=gd
+
+   3) Hapus tanda titik koma (`;`) sehingga menjadi:
+
+   extension=gd
+
+   4) Simpan file.
+   5) Restart Apache melalui XAMPP Control Panel.
+
+
+5. Menempatkan Source Code
+Salin folder proyek SIS ke direktori: xampp/htdocs/
+Contoh:
+
+xampp/htdocs/SIS
+
+6. Menjalankan Sistem
+
+Buka browser dan akses: http://localhost/SIS
+
+Jika konfigurasi berhasil, halaman utama SixSeven Inventory System (SIS) akan ditampilkan dan sistem siap digunakan.
+
+7. Akun Login
+
+Gunakan akun yang telah tersedia pada database atau lakukan registrasi pengguna baru melalui fitur yang disediakan oleh sistem.
+
+
+Dengan menyelesaikan langkah-langkah di atas, SixSeven Inventory System (SIS) dapat dijalankan pada lingkungan lokal menggunakan Apache dan MySQL melalui XAMPP.
+
+
+Developer Web SIS
+1> Ryan Ardiansyah (2407431002)
+2> Bimo Refka Adiriski Saputra (2407431004)
+3> Fikry Aries Ariansyah (2407431026)
+
